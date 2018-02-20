@@ -132,11 +132,6 @@ public class Main {
 
         parseArgs(args);
 
-        final ArtifactManagerConfig amConfig = new ArtifactManagerConfig();
-        if ( repoUrls != null ) {
-            amConfig.setRepositoryUrls(repoUrls.split(","));
-        }
-
         final ArtifactManager am = getArtifactManager();
 
 
