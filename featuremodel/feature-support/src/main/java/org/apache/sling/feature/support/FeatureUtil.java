@@ -58,8 +58,42 @@ import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.resolver.Resolver;
 
 public class FeatureUtil {
-    private static Resolver resolver = loadResolver();
-    private static Resource frameworkResource; // TODO properly initialize
+    private static final Resolver resolver;
+    private static final Resource frameworkResource;
+
+    static {
+        Resolver r = null;
+        // Launch an OSGi framework and obtain its resolver
+        try {
+            FrameworkFactory fwf = ServiceLoader.load(FrameworkFactory.class).iterator().next();
+            Framework fw = fwf.newFramework(Collections.emptyMap());
+            fw.init();
+            fw.start();
+            BundleContext ctx = fw.getBundleContext();
+
+            // Create a resource representing the framework
+            BundleRevision br = fw.adapt(BundleRevision.class);
+            List<Capability> caps = br.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE);
+            frameworkResource = new ResourceImpl("framework",
+                    Collections.singletonMap(PackageNamespace.PACKAGE_NAMESPACE, caps), Collections.emptyMap());
+
+            int i=0;
+            while (i < 20) {
+                ServiceReference<Resolver> ref = ctx.getServiceReference(Resolver.class);
+                if (ref != null) {
+                    r = ctx.getService(ref);
+                    break;
+                }
+
+                // The service isn't there yet, let's wait a little and try again
+                Thread.sleep(500);
+                i++;
+            }
+        } catch (BundleException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        resolver = r;
+    }
 
     /**
      * Get an artifact id for the Apache Felix framework
@@ -418,38 +452,5 @@ public class FeatureUtil {
             final Feature f = FeatureJSONReader.read(r, featureArtifact.getUrl());
             return f;
         }
-    }
-
-    private static Resolver loadResolver() {
-        // Launch an OSGi framework and obtain its resolver
-        try {
-            for (FrameworkFactory fwf : ServiceLoader.load(FrameworkFactory.class)) {
-                Framework fw = fwf.newFramework(Collections.emptyMap());
-                fw.init();
-                fw.start();
-                BundleContext ctx = fw.getBundleContext();
-
-                /* */
-                BundleRevision br = fw.adapt(BundleRevision.class);
-                List<Capability> caps = br.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE);
-//                System.out.println("~~~" + caps);
-                frameworkResource = new ResourceImpl("framework", Collections.singletonMap(PackageNamespace.PACKAGE_NAMESPACE, caps), Collections.emptyMap());
-                /* */
-
-                int i=0;
-                while (i < 20) {
-                    ServiceReference<Resolver> ref = ctx.getServiceReference(Resolver.class);
-                    if (ref != null)
-                        return ctx.getService(ref);
-
-                    // The service isn't there yet, let's wait a little and try again
-                    Thread.sleep(500);
-                    i++;
-                }
-            }
-        } catch (BundleException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        throw new IllegalStateException("OSGi resolver cannot be obtained");
     }
 }
