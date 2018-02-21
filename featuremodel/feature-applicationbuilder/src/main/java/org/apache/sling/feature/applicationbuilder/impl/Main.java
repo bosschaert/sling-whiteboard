@@ -161,7 +161,12 @@ public class Main {
         } catch ( final IOException ioe) {
             LOGGER.error("Unable to read feature/application files " + ioe.getMessage(), ioe);
             System.exit(1);
+        } catch ( final Exception e) {
+            LOGGER.error("Problem generating application", e);
+            System.exit(1);
         }
+        // Have to call system exit as the OSGi Framework that is loaded has some non-daemon threads
+        System.exit(0);
     }
 
     private static Application buildApplication(final Application app) {

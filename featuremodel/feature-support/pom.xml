@@ -96,6 +96,12 @@
             <version>1.0-alpha-1</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.resolver</artifactId>
+            <version>1.0.1</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- Testing -->
         <dependency>
