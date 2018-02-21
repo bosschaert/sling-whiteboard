@@ -32,13 +32,9 @@ public class ResolveContextImpl extends ResolveContext {
 
     @Override
     public List<Capability> findProviders(Requirement requirement) {
-//        System.out.println("*** Called: findProviders " + requirement);
         List<Capability> providers = new ArrayList<>();
 
         String f = requirement.getDirectives().get("filter");
-        if (f.contains("org.osgi.service.metatype")) {
-            System.out.println("Looking up metatype");
-        }
         try {
             Filter filter = FrameworkUtil.createFilter(f);
             for (Resource r : availableResources) {
@@ -57,7 +53,7 @@ public class ResolveContextImpl extends ResolveContext {
 
     @Override
     public int insertHostedCapability(List<Capability> capabilities, HostedCapability hostedCapability) {
-        System.out.println("*** Called: insertHostedCapability " + capabilities + "-" + hostedCapability);
+        capabilities.add(0, hostedCapability);
         return 0;
     }
 

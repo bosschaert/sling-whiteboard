@@ -255,84 +255,89 @@ public class FeatureUtil {
     }
 
     private static Feature[] orderFeatures(ArtifactManager artifactManager, Feature[] features) throws IOException {
-        Resource mainBundle = null;
-
         Map<Resource, Feature> bundleMap = new HashMap<>();
         for (Feature f : features) {
             for (Artifact b : f.getBundles()) {
                 BundleDescriptor bd = getBundleDescriptor(artifactManager, b);
                 Resource r = new ResourceImpl(bd);
                 bundleMap.put(r, f);
-
-                // TODO where do we start? Anywhere?
-                if (bd.getBundleSymbolicName().equals("recording-servlet"))
-                    mainBundle = r;
             }
         }
 
         // Add these to the available features
         Artifact lpa = new Artifact(ArtifactId.parse("org.apache.sling/org.apache.sling.launchpad.api/1.2.0"));
-        bundleMap.put(new ResourceImpl(getBundleDescriptor(artifactManager, lpa)), null); // What feature?
+        bundleMap.put(new ResourceImpl(getBundleDescriptor(artifactManager, lpa)), null);
         bundleMap.put(frameworkResource, null);
 
+        List<Resource> orderedBundles = new LinkedList<>();
         try {
-            Map<Resource, List<Wire>> deps = resolver.resolve(new ResolveContextImpl(mainBundle, bundleMap.keySet()));
-            System.out.println("#### " + deps);
-
-            List<Resource> orderedBundles = new LinkedList<>();
-            for (Map.Entry<Resource, List<Wire>> entry : deps.entrySet()) {
-                Resource curBundle = entry.getKey();
-                if (!orderedBundles.contains(curBundle)) {
-                    orderedBundles.add(curBundle);
+            for (Resource bundle : bundleMap.keySet()) {
+                if (orderedBundles.contains(bundle)) {
+                    // Already handled
+                    continue;
                 }
+                Map<Resource, List<Wire>> deps = resolver.resolve(new ResolveContextImpl(bundle, bundleMap.keySet()));
 
-                for (Wire w : entry.getValue()) {
-                    Resource provBundle = w.getProvider();
-                    int curBundleIdx = orderedBundles.indexOf(curBundle);
-                    int newBundleIdx = orderedBundles.indexOf(provBundle);
-                    if (newBundleIdx >= 0) {
-                        if (curBundleIdx < newBundleIdx) {
-                            // If the list already contains the providing but after the current bundle, remove it there to move it before the current bundle
-                            orderedBundles.remove(provBundle);
-                        } else {
-                            // If the providing bundle is already before the current bundle, then no need to change anything
-                            continue;
+                for (Map.Entry<Resource, List<Wire>> entry : deps.entrySet()) {
+                    Resource curBundle = entry.getKey();
+
+                    if (!bundleMap.containsKey(curBundle)) {
+                        System.out.println("*** This is some synthesized bundle. Ignoring: " + curBundle);
+                        continue;
+                    }
+
+                    if (!orderedBundles.contains(curBundle)) {
+                        orderedBundles.add(curBundle);
+                    }
+
+                    for (Wire w : entry.getValue()) {
+                        Resource provBundle = w.getProvider();
+                        int curBundleIdx = orderedBundles.indexOf(curBundle);
+                        int newBundleIdx = orderedBundles.indexOf(provBundle);
+                        if (newBundleIdx >= 0) {
+                            if (curBundleIdx < newBundleIdx) {
+                                // If the list already contains the providing but after the current bundle, remove it there to move it before the current bundle
+                                orderedBundles.remove(provBundle);
+                            } else {
+                                // If the providing bundle is already before the current bundle, then no need to change anything
+                                continue;
+                            }
                         }
-                    }
-                    orderedBundles.add(curBundleIdx, provBundle);
-                }
-            }
-
-            // Sort the fragments so that fragments are started before the host bundle
-            for (int i=0; i<orderedBundles.size(); i++) {
-                Resource r = orderedBundles.get(i);
-                List<Requirement> reqs = r.getRequirements(HostNamespace.HOST_NAMESPACE);
-                if (reqs.size() > 0) {
-                    // This is a fragment
-                    Requirement req = reqs.iterator().next(); // TODO handle more host requirements
-                    String bsn = req.getAttributes().get(HostNamespace.HOST_NAMESPACE).toString(); // TODO this is not valid, should obtain from filter
-                    int idx = getBundleIndex(orderedBundles, bsn); // TODO check for filter too
-                    if (idx < i) {
-                        // the fragment is after the host, and should be moved to be before the host
-                        Resource frag = orderedBundles.remove(i);
-                        orderedBundles.add(idx, frag);
+                        orderedBundles.add(curBundleIdx, provBundle);
                     }
                 }
             }
-
-            List<Feature> orderedFeatures = new ArrayList<>();
-            for (Resource r : orderedBundles) {
-                Feature f = bundleMap.get(r);
-                if (f != null) {
-                    if (!orderedFeatures.contains(f)) {
-                        orderedFeatures.add(f);
-                    }
-                }
-            }
-            return orderedFeatures.toArray(new Feature[] {});
         } catch (ResolutionException e) {
             throw new RuntimeException(e);
         }
+
+        // Sort the fragments so that fragments are started before the host bundle
+        for (int i=0; i<orderedBundles.size(); i++) {
+            Resource r = orderedBundles.get(i);
+            List<Requirement> reqs = r.getRequirements(HostNamespace.HOST_NAMESPACE);
+            if (reqs.size() > 0) {
+                // This is a fragment
+                Requirement req = reqs.iterator().next(); // TODO handle more host requirements
+                String bsn = req.getAttributes().get(HostNamespace.HOST_NAMESPACE).toString(); // TODO this is not valid, should obtain from filter
+                int idx = getBundleIndex(orderedBundles, bsn); // TODO check for filter too
+                if (idx < i) {
+                    // the fragment is after the host, and should be moved to be before the host
+                    Resource frag = orderedBundles.remove(i);
+                    orderedBundles.add(idx, frag);
+                }
+            }
+        }
+
+        List<Feature> orderedFeatures = new ArrayList<>();
+        for (Resource r : orderedBundles) {
+            Feature f = bundleMap.get(r);
+            if (f != null) {
+                if (!orderedFeatures.contains(f)) {
+                    orderedFeatures.add(f);
+                }
+            }
+        }
+        return orderedFeatures.toArray(new Feature[] {});
     }
 
     private static int getBundleIndex(List<Resource> bundles, String bundleSymbolicName) {
