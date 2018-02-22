@@ -32,8 +32,8 @@ import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.analyser.BundleDescriptor;
 import org.apache.sling.feature.analyser.impl.BundleDescriptorImpl;
 import org.apache.sling.feature.process.FeatureResolver;
+import org.apache.sling.feature.resolver.impl.BundleResourceImpl;
 import org.apache.sling.feature.resolver.impl.ResolveContextImpl;
-import org.apache.sling.feature.resolver.impl.ResourceImpl;
 import org.apache.sling.feature.support.ArtifactManager;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -72,7 +72,7 @@ public class FrameworkResolver implements FeatureResolver {
             // Create a resource representing the framework
             BundleRevision br = framework.adapt(BundleRevision.class);
             List<Capability> caps = br.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE);
-            frameworkResource = new ResourceImpl("framework",
+            frameworkResource = new BundleResourceImpl(
                     Collections.singletonMap(PackageNamespace.PACKAGE_NAMESPACE, caps), Collections.emptyMap());
 
             int i=0;
@@ -112,14 +112,14 @@ public class FrameworkResolver implements FeatureResolver {
         for (Feature f : features) {
             for (Artifact b : f.getBundles()) {
                 BundleDescriptor bd = getBundleDescriptor(artifactManager, b);
-                Resource r = new ResourceImpl(bd);
+                Resource r = new BundleResourceImpl(bd);
                 bundleMap.put(r, f);
             }
         }
 
         // Add these to the available features
         Artifact lpa = new Artifact(ArtifactId.parse("org.apache.sling/org.apache.sling.launchpad.api/1.2.0"));
-        bundleMap.put(new ResourceImpl(getBundleDescriptor(artifactManager, lpa)), null);
+        bundleMap.put(new BundleResourceImpl(getBundleDescriptor(artifactManager, lpa)), null);
         bundleMap.put(frameworkResource, null);
 
         List<Resource> orderedBundles = new LinkedList<>();

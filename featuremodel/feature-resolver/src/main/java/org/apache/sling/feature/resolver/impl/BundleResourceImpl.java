@@ -39,8 +39,7 @@ import org.osgi.resource.Resource;
 /**
  * Implementation of the OSGi Resource interface.
  */
-public class ResourceImpl implements Resource {
-    final String hint; // TODO can be removed
+public class BundleResourceImpl implements Resource {
     final Map<String, List<Capability>> capabilities;
     final Map<String, List<Requirement>> requirements;
 
@@ -48,9 +47,7 @@ public class ResourceImpl implements Resource {
      * Create a resource based on a BundleDescriptor.
      * @param bd The BundleDescriptor to represent.
      */
-    public ResourceImpl(BundleDescriptor bd) {
-        hint = bd.getBundleSymbolicName() + "-" + bd.getBundleVersion();
-
+    public BundleResourceImpl(BundleDescriptor bd) {
         Map<String, List<Capability>> caps = new HashMap<>();
         for (Capability c : bd.getCapabilities()) {
             List<Capability> l = caps.get(c.getNamespace());
@@ -119,8 +116,7 @@ public class ResourceImpl implements Resource {
      * @param caps The capabilities of the resource.
      * @param reqs The requirements of the resource.
      */
-    public ResourceImpl(String hnt, Map<String, List<Capability>> caps, Map<String, List<Requirement>> reqs) {
-        hint = hnt;
+    public BundleResourceImpl(Map<String, List<Capability>> caps, Map<String, List<Requirement>> reqs) {
         capabilities = caps;
         requirements = reqs;
     }
@@ -149,13 +145,10 @@ public class ResourceImpl implements Resource {
         return reqs;
     }
 
-
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((hint == null) ? 0 : hint.hashCode());
         result = prime * result + ((capabilities == null) ? 0 : capabilities.hashCode());
         result = prime * result + ((requirements == null) ? 0 : requirements.hashCode());
         return result;
@@ -169,16 +162,11 @@ public class ResourceImpl implements Resource {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        ResourceImpl other = (ResourceImpl) obj;
+        BundleResourceImpl other = (BundleResourceImpl) obj;
         if (capabilities == null) {
             if (other.capabilities != null)
                 return false;
         } else if (!capabilities.equals(other.capabilities))
-            return false;
-        if (hint == null) {
-            if (other.hint != null)
-                return false;
-        } else if (!hint.equals(other.hint))
             return false;
         if (requirements == null) {
             if (other.requirements != null)
@@ -190,6 +178,6 @@ public class ResourceImpl implements Resource {
 
     @Override
     public String toString() {
-        return "ResourceImpl [" + hint + "]";
+        return "ResourceImpl [" + getCapabilities(BundleNamespace.BUNDLE_NAMESPACE) + "]";
     }
 }
