@@ -16,6 +16,9 @@
  */
 package org.apache.sling.feature.analyser;
 
+import java.io.InputStreamReader;
+import java.io.Reader;
+
 import org.apache.sling.feature.Application;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.analyser.service.Analyser;
@@ -25,9 +28,6 @@ import org.apache.sling.feature.support.ArtifactManagerConfig;
 import org.apache.sling.feature.support.FeatureUtil;
 import org.apache.sling.feature.support.json.FeatureJSONReader;
 import org.junit.Test;
-
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 import static junit.framework.TestCase.fail;
 
@@ -40,7 +40,7 @@ public class AnalyserTest {
                 "UTF-8") ) {
             Feature feature = FeatureJSONReader.read(reader, "feature");
 
-            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()), feature);
+            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()), null, feature);
 
             analyser.analyse(app);
         }
@@ -54,7 +54,7 @@ public class AnalyserTest {
                 "UTF-8") ) {
             Feature feature = FeatureJSONReader.read(reader, "feature");
 
-            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()), feature);
+            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()), null, feature);
 
             try {
                 analyser.analyse(app);
