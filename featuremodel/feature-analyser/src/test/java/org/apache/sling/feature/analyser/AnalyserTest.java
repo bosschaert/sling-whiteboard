@@ -16,20 +16,22 @@
  */
 package org.apache.sling.feature.analyser;
 
+import static junit.framework.TestCase.fail;
+
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.List;
 
 import org.apache.sling.feature.Application;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.analyser.service.Analyser;
 import org.apache.sling.feature.analyser.service.Scanner;
+import org.apache.sling.feature.process.FeatureResolver;
 import org.apache.sling.feature.support.ArtifactManager;
 import org.apache.sling.feature.support.ArtifactManagerConfig;
 import org.apache.sling.feature.support.FeatureUtil;
 import org.apache.sling.feature.support.json.FeatureJSONReader;
 import org.junit.Test;
-
-import static junit.framework.TestCase.fail;
 
 public class AnalyserTest {
     @Test
@@ -40,7 +42,8 @@ public class AnalyserTest {
                 "UTF-8") ) {
             Feature feature = FeatureJSONReader.read(reader, "feature");
 
-            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()), null, feature);
+            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()),
+                    getTestResolver(), feature);
 
             analyser.analyse(app);
         }
@@ -54,7 +57,8 @@ public class AnalyserTest {
                 "UTF-8") ) {
             Feature feature = FeatureJSONReader.read(reader, "feature");
 
-            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()), null, feature);
+            Application app = FeatureUtil.assembleApplication(null, ArtifactManager.getArtifactManager(new ArtifactManagerConfig()),
+                    getTestResolver(), feature);
 
             try {
                 analyser.analyse(app);
@@ -65,5 +69,18 @@ public class AnalyserTest {
                 // Pass
             }
         }
+    }
+
+    private FeatureResolver getTestResolver() {
+        return new FeatureResolver() {
+            @Override
+            public void close() throws Exception {
+            }
+
+            @Override
+            public List<Feature> orderFeatures(List<Feature> features) {
+                return features;
+            }
+        };
     }
 }
