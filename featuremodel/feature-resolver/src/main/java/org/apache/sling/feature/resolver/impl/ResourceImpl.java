@@ -31,7 +31,6 @@ import org.apache.sling.feature.support.util.PackageInfo;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
 import org.osgi.framework.namespace.BundleNamespace;
-import org.osgi.framework.namespace.ExecutionEnvironmentNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
@@ -53,7 +52,14 @@ public class ResourceImpl implements Resource {
         hint = bd.getBundleSymbolicName() + "-" + bd.getBundleVersion();
 
         Map<String, List<Capability>> caps = new HashMap<>();
-        caps.putAll(convertCapabilities(this, bd.getCapabilities()));
+        for (Capability c : bd.getCapabilities()) {
+            List<Capability> l = caps.get(c.getNamespace());
+            if (l == null) {
+                l = new ArrayList<>();
+                caps.put(c.getNamespace(), l);
+            }
+            l.add(c);
+        }
 
         // Add the package capabilities (export package)
         List<Capability> pkgCaps = new ArrayList<>();
@@ -76,7 +82,14 @@ public class ResourceImpl implements Resource {
         capabilities = Collections.unmodifiableMap(caps);
 
         Map<String, List<Requirement>> reqs = new HashMap<>();
-        reqs.putAll(convertRequirements(this, bd.getRequirements()));
+        for (Requirement r : bd.getRequirements()) {
+            List<Requirement> l = reqs.get(r.getNamespace());
+            if (l == null) {
+                l = new ArrayList<>();
+                reqs.put(r.getNamespace(), l);
+            }
+            l.add(r);
+        }
 
         // Add the package requirements (import package)
         List<Requirement> pkgReqs = new ArrayList<>();
@@ -98,51 +111,6 @@ public class ResourceImpl implements Resource {
         }
         reqs.put(PackageNamespace.PACKAGE_NAMESPACE, Collections.unmodifiableList(pkgReqs));
         requirements = Collections.unmodifiableMap(reqs);
-    }
-
-    private Map<String, List<Capability>> convertCapabilities(ResourceImpl res, Collection<org.apache.sling.feature.Capability> caps) {
-        Map<String, List<Capability>> converted = new HashMap<>();
-
-        for (org.apache.sling.feature.Capability c : caps) {
-            Map<String, String> dirs = new HashMap<>();
-            for (Map.Entry<String, Object> entry : c.getDirectives().entrySet()) {
-                dirs.put(entry.getKey(), entry.getValue().toString());
-            }
-            Capability cap = new ResourceCapability(res, c.getNamespace(), c.getAttributes(), dirs);
-
-            List<Capability> l = converted.get(c.getNamespace());
-            if (l == null) {
-                l = new ArrayList<>();
-                converted.put(c.getNamespace(), l);
-            }
-            l.add(cap);
-        }
-
-        return converted;
-    }
-
-    private Map<String, List<Requirement>> convertRequirements(ResourceImpl res, Collection<org.apache.sling.feature.Requirement> reqs) {
-        Map<String, List<Requirement>> converted = new HashMap<>();
-
-        for (org.apache.sling.feature.Requirement r : reqs) {
-            if (ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE.equals(r.getNamespace()))
-                continue; // TODO can we possibly handle this?
-
-            Map<String, String> dirs = new HashMap<>();
-            for (Map.Entry<String, Object> entry : r.getDirectives().entrySet()) {
-                dirs.put(entry.getKey(), entry.getValue().toString());
-            }
-            Requirement req = new ResourceRequirement(res, r.getNamespace(), r.getAttributes(), dirs);
-
-            List<Requirement> l = converted.get(r.getNamespace());
-            if (l == null) {
-                l = new ArrayList<>();
-                converted.put(r.getNamespace(), l);
-            }
-            l.add(req);
-        }
-
-        return converted;
     }
 
     /**

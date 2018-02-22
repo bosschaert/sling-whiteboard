@@ -1,9 +1,7 @@
 package org.apache.sling.feature.support.util;
 
-import org.apache.sling.feature.Capability;
-import org.apache.sling.feature.Requirement;
-import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
+import static org.osgi.framework.Constants.RESOLUTION_DIRECTIVE;
+import static org.osgi.framework.Constants.RESOLUTION_OPTIONAL;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -19,8 +17,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.osgi.framework.Constants.RESOLUTION_DIRECTIVE;
-import static org.osgi.framework.Constants.RESOLUTION_OPTIONAL;
+import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -497,7 +497,7 @@ public class CapabilityMatcher
 
     public static  boolean matches(Capability capability, Requirement requirement) {
         if (requirement.getNamespace().equals(capability.getNamespace())) {
-            String filter = (String) requirement.getDirectives().get(Constants.FILTER_DIRECTIVE);
+            String filter = requirement.getDirectives().get(Constants.FILTER_DIRECTIVE);
             if (filter != null) {
                 return matches(capability, SimpleFilter.parse(filter));
             }
@@ -512,7 +512,7 @@ public class CapabilityMatcher
 
     public static boolean isAttributeMandatory(Capability capability, String name)
     {
-        String value = (String) capability.getDirectives().get(Constants.MANDATORY_DIRECTIVE);
+        String value = capability.getDirectives().get(Constants.MANDATORY_DIRECTIVE);
         if (value != null)
         {
             return parseDelimitedString(value, ",").contains(name);

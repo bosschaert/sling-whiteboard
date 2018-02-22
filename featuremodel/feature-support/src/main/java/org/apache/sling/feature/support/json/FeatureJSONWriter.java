@@ -16,24 +16,24 @@
  */
 package org.apache.sling.feature.support.json;
 
-import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Capability;
-import org.apache.sling.feature.Configuration;
-import org.apache.sling.feature.Configurations;
-import org.apache.sling.feature.Feature;
-import org.apache.sling.feature.Include;
-import org.apache.sling.feature.Requirement;
+import static org.apache.sling.feature.support.util.ManifestUtil.marshalAttribute;
+import static org.apache.sling.feature.support.util.ManifestUtil.marshalDirective;
 
-import javax.json.Json;
-import javax.json.stream.JsonGenerator;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.sling.feature.support.util.ManifestUtil.marshalAttribute;
-import static org.apache.sling.feature.support.util.ManifestUtil.marshalDirective;
+import javax.json.Json;
+import javax.json.stream.JsonGenerator;
 
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Configuration;
+import org.apache.sling.feature.Configurations;
+import org.apache.sling.feature.Feature;
+import org.apache.sling.feature.Include;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
 
 /**
  * Simple JSON writer for a feature

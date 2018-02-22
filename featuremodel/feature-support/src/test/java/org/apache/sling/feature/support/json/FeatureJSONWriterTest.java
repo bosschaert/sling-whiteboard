@@ -16,14 +16,14 @@
  */
 package org.apache.sling.feature.support.json;
 
-import org.apache.sling.feature.Feature;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
+import org.apache.sling.feature.Feature;
+import org.junit.Test;
 
 public class FeatureJSONWriterTest {
 
