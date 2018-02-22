@@ -1,4 +1,4 @@
-package org.apache.sling.feature.support.resolver;
+package org.apache.sling.feature.resolver.impl;
 
 import java.util.Collections;
 import java.util.HashMap;

@@ -29,6 +29,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.sling.feature.Application;
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.process.FeatureResolver;
+import org.apache.sling.feature.resolver.FrameworkResolver;
 import org.apache.sling.feature.support.ArtifactManager;
 import org.apache.sling.feature.support.ArtifactManagerConfig;
 import org.apache.sling.feature.support.FeatureUtil;
@@ -118,6 +120,10 @@ public class Main {
         return null;
     }
 
+    private static FeatureResolver getFeatureResolver(ArtifactManager am) {
+        return new FrameworkResolver(am);
+    }
+
     public static void main(final String[] args) {
         // setup logging
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
@@ -155,8 +161,8 @@ public class Main {
             System.exit(1);
         }
 
-        try {
-            writeApplication(buildApplication(FeatureUtil.assembleApplication(null, am, files)), output == null ? "application.json" : output);
+        try (FeatureResolver fr = getFeatureResolver(am)) {
+            writeApplication(buildApplication(FeatureUtil.assembleApplication(null, am, fr, files)), output == null ? "application.json" : output);
 
         } catch ( final IOException ioe) {
             LOGGER.error("Unable to read feature/application files " + ioe.getMessage(), ioe);
@@ -165,8 +171,6 @@ public class Main {
             LOGGER.error("Problem generating application", e);
             System.exit(1);
         }
-        // Have to call system exit as the OSGi Framework that is loaded has some non-daemon threads
-        System.exit(0);
     }
 
     private static Application buildApplication(final Application app) {

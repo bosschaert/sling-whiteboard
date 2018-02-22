@@ -1,4 +1,4 @@
-package org.apache.sling.feature.support.resolver;
+package org.apache.sling.feature.resolver.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.sling.feature.support.descriptor.BundleDescriptor;
+import org.apache.sling.feature.analyser.BundleDescriptor;
 import org.apache.sling.feature.support.util.PackageInfo;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;

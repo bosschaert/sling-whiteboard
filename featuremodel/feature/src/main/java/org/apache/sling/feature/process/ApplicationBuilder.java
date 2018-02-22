@@ -17,7 +17,6 @@
 package org.apache.sling.feature.process;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +46,7 @@ public class ApplicationBuilder {
      */
     public static Application assemble(final Application app,
             final BuilderContext context,
+            final FeatureResolver resolver,
             final String... featureIds) {
         if ( featureIds == null || context == null ) {
             throw new IllegalArgumentException("Features and/or context must not be null");
@@ -61,7 +61,7 @@ public class ApplicationBuilder {
             }
             index++;
         }
-        return assemble(app, context, features);
+        return assemble(app, context, resolver, features);
     }
 
     /**
@@ -73,6 +73,7 @@ public class ApplicationBuilder {
      *
      * @param app The optional application to use as a base.
      * @param context The builder context
+     * @param resolver
      * @param features The features
      * @return The application
      * throws IllegalArgumentException If context or featureIds is {@code null}
@@ -81,7 +82,7 @@ public class ApplicationBuilder {
     public static Application assemble(
             Application app,
             final BuilderContext context,
-            final Feature... features) {
+            final FeatureResolver resolver, final Feature... features) {
         if ( features == null || context == null ) {
             throw new IllegalArgumentException("Features and/or context must not be null");
         }
@@ -92,7 +93,7 @@ public class ApplicationBuilder {
 
         // detect upgrades and created sorted feature list
         final Map<Feature, List<Feature>> upgrades = new HashMap<>();
-        final List<Feature> sortedFeatureList = new ArrayList<>();
+        List<Feature> sortedFeatureList = new ArrayList<>();
         for(final Feature f : features) {
             if ( f.getUpgradeOf() != null ) {
                 for(final Feature i : features) {
@@ -123,8 +124,8 @@ public class ApplicationBuilder {
             sortedFeatureList.add(assembled);
         }
 
-        // sort
-        Collections.sort(sortedFeatureList);
+        // order by dependency chain
+        sortedFeatureList = resolver.orderFeatures(sortedFeatureList);
 
         // assemble
         for(final Feature f : sortedFeatureList) {
