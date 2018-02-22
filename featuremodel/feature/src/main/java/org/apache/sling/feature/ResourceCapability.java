@@ -14,7 +14,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.apache.sling.feature.resolver.impl;
+package org.apache.sling.feature;
 
 import java.util.Map;
 
@@ -24,7 +24,18 @@ import org.osgi.resource.Resource;
 /**
  * Implementation of the OSGi Capability interface.
  */
-public class CapabilityImpl extends AbstractCapabilityRequirement implements Capability {
+public class ResourceCapability extends AbstractCapabilityRequirement implements Capability {
+    /**
+     * Create a capability that is not associated with a resource.
+     * @param res The resource associated with the capability. May be null.
+     * @param ns The namespace of the capability.
+     * @param attrs The attributes of the capability.
+     * @param dirs The directives of the capability.
+     */
+    public ResourceCapability(String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+        this(null, ns, attrs, dirs);
+    }
+
     /**
      * Create a capability.
      * @param res The resource associated with the capability. May be null.
@@ -32,7 +43,7 @@ public class CapabilityImpl extends AbstractCapabilityRequirement implements Cap
      * @param attrs The attributes of the capability.
      * @param dirs The directives of the capability.
      */
-    public CapabilityImpl(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+    public ResourceCapability(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         super(res, ns, attrs, dirs);
     }
 }

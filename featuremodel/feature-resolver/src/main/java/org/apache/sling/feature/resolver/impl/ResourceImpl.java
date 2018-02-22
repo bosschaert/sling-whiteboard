@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.sling.feature.ResourceCapability;
+import org.apache.sling.feature.ResourceRequirement;
 import org.apache.sling.feature.analyser.BundleDescriptor;
 import org.apache.sling.feature.support.util.PackageInfo;
 import org.osgi.framework.Version;
@@ -61,7 +63,7 @@ public class ResourceImpl implements Resource {
             attrs.put(PackageNamespace.CAPABILITY_VERSION_ATTRIBUTE, exported.getPackageVersion());
             attrs.put(PackageNamespace.CAPABILITY_BUNDLE_SYMBOLICNAME_ATTRIBUTE, bd.getBundleSymbolicName());
             attrs.put(PackageNamespace.CAPABILITY_BUNDLE_VERSION_ATTRIBUTE, new Version(bd.getBundleVersion()));
-            pkgCaps.add(new CapabilityImpl(this, PackageNamespace.PACKAGE_NAMESPACE, attrs, Collections.emptyMap()));
+            pkgCaps.add(new ResourceCapability(this, PackageNamespace.PACKAGE_NAMESPACE, attrs, Collections.emptyMap()));
         }
         caps.put(PackageNamespace.PACKAGE_NAMESPACE, Collections.unmodifiableList(pkgCaps));
 
@@ -69,7 +71,7 @@ public class ResourceImpl implements Resource {
         Map<String, Object> battrs = new HashMap<>();
         battrs.put(BundleNamespace.BUNDLE_NAMESPACE, bd.getBundleSymbolicName());
         battrs.put(BundleNamespace.CAPABILITY_BUNDLE_VERSION_ATTRIBUTE, new Version(bd.getBundleVersion()));
-        CapabilityImpl bundleCap = new CapabilityImpl(this, BundleNamespace.BUNDLE_NAMESPACE, battrs, Collections.emptyMap());
+        ResourceCapability bundleCap = new ResourceCapability(this, BundleNamespace.BUNDLE_NAMESPACE, battrs, Collections.emptyMap());
         caps.put(BundleNamespace.BUNDLE_NAMESPACE, Collections.singletonList(bundleCap));
         capabilities = Collections.unmodifiableMap(caps);
 
@@ -92,7 +94,7 @@ public class ResourceImpl implements Resource {
             if (imported.isOptional())
                 dirs.put(PackageNamespace.REQUIREMENT_RESOLUTION_DIRECTIVE,
                     PackageNamespace.RESOLUTION_OPTIONAL);
-            pkgReqs.add(new RequirementImpl(this, PackageNamespace.PACKAGE_NAMESPACE, Collections.emptyMap(), dirs));
+            pkgReqs.add(new ResourceRequirement(this, PackageNamespace.PACKAGE_NAMESPACE, Collections.emptyMap(), dirs));
         }
         reqs.put(PackageNamespace.PACKAGE_NAMESPACE, Collections.unmodifiableList(pkgReqs));
         requirements = Collections.unmodifiableMap(reqs);
@@ -106,7 +108,7 @@ public class ResourceImpl implements Resource {
             for (Map.Entry<String, Object> entry : c.getDirectives().entrySet()) {
                 dirs.put(entry.getKey(), entry.getValue().toString());
             }
-            Capability cap = new CapabilityImpl(res, c.getNamespace(), c.getAttributes(), dirs);
+            Capability cap = new ResourceCapability(res, c.getNamespace(), c.getAttributes(), dirs);
 
             List<Capability> l = converted.get(c.getNamespace());
             if (l == null) {
@@ -130,7 +132,7 @@ public class ResourceImpl implements Resource {
             for (Map.Entry<String, Object> entry : r.getDirectives().entrySet()) {
                 dirs.put(entry.getKey(), entry.getValue().toString());
             }
-            Requirement req = new RequirementImpl(res, r.getNamespace(), r.getAttributes(), dirs);
+            Requirement req = new ResourceRequirement(res, r.getNamespace(), r.getAttributes(), dirs);
 
             List<Requirement> l = converted.get(r.getNamespace());
             if (l == null) {

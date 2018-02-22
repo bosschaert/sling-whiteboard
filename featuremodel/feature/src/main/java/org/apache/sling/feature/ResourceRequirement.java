@@ -14,7 +14,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.apache.sling.feature.resolver.impl;
+package org.apache.sling.feature;
 
 import java.util.Map;
 
@@ -24,15 +24,26 @@ import org.osgi.resource.Resource;
 /**
  * Implementation of the OSGi Requirement interface.
  */
-public class RequirementImpl extends AbstractCapabilityRequirement implements Requirement {
+public class ResourceRequirement extends AbstractCapabilityRequirement implements Requirement {
     /**
-     * Create a requirement.
-     * @param res The resource associated with the requirement. May be null.
+     * Create a requirement that is not associated with a resource.
+     * @param res The resource associated with the requirement.
      * @param ns The namespace of the requirement.
      * @param attrs The attributes of the requirement.
      * @param dirs The directives of the requirement.
      */
-    public RequirementImpl(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+    public ResourceRequirement(String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+        this(null, ns, attrs, dirs);
+    }
+
+    /**
+     * Create a requirement.
+     * @param res The resource associated with the requirement.
+     * @param ns The namespace of the requirement.
+     * @param attrs The attributes of the requirement.
+     * @param dirs The directives of the requirement.
+     */
+    public ResourceRequirement(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         super(res, ns, attrs, dirs);
     }
 }
