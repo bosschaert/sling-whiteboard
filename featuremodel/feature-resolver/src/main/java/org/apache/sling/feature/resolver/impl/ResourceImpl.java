@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.sling.feature.ResourceCapability;
-import org.apache.sling.feature.ResourceRequirement;
+import org.apache.sling.feature.OSGiCapability;
+import org.apache.sling.feature.OSGiRequirement;
 import org.apache.sling.feature.analyser.BundleDescriptor;
 import org.apache.sling.feature.support.util.PackageInfo;
 import org.osgi.framework.Version;
@@ -69,7 +69,7 @@ public class ResourceImpl implements Resource {
             attrs.put(PackageNamespace.CAPABILITY_VERSION_ATTRIBUTE, exported.getPackageVersion());
             attrs.put(PackageNamespace.CAPABILITY_BUNDLE_SYMBOLICNAME_ATTRIBUTE, bd.getBundleSymbolicName());
             attrs.put(PackageNamespace.CAPABILITY_BUNDLE_VERSION_ATTRIBUTE, new Version(bd.getBundleVersion()));
-            pkgCaps.add(new ResourceCapability(this, PackageNamespace.PACKAGE_NAMESPACE, attrs, Collections.emptyMap()));
+            pkgCaps.add(new OSGiCapability(this, PackageNamespace.PACKAGE_NAMESPACE, attrs, Collections.emptyMap()));
         }
         caps.put(PackageNamespace.PACKAGE_NAMESPACE, Collections.unmodifiableList(pkgCaps));
 
@@ -77,7 +77,7 @@ public class ResourceImpl implements Resource {
         Map<String, Object> battrs = new HashMap<>();
         battrs.put(BundleNamespace.BUNDLE_NAMESPACE, bd.getBundleSymbolicName());
         battrs.put(BundleNamespace.CAPABILITY_BUNDLE_VERSION_ATTRIBUTE, new Version(bd.getBundleVersion()));
-        ResourceCapability bundleCap = new ResourceCapability(this, BundleNamespace.BUNDLE_NAMESPACE, battrs, Collections.emptyMap());
+        OSGiCapability bundleCap = new OSGiCapability(this, BundleNamespace.BUNDLE_NAMESPACE, battrs, Collections.emptyMap());
         caps.put(BundleNamespace.BUNDLE_NAMESPACE, Collections.singletonList(bundleCap));
         capabilities = Collections.unmodifiableMap(caps);
 
@@ -107,7 +107,7 @@ public class ResourceImpl implements Resource {
             if (imported.isOptional())
                 dirs.put(PackageNamespace.REQUIREMENT_RESOLUTION_DIRECTIVE,
                     PackageNamespace.RESOLUTION_OPTIONAL);
-            pkgReqs.add(new ResourceRequirement(this, PackageNamespace.PACKAGE_NAMESPACE, Collections.emptyMap(), dirs));
+            pkgReqs.add(new OSGiRequirement(this, PackageNamespace.PACKAGE_NAMESPACE, Collections.emptyMap(), dirs));
         }
         reqs.put(PackageNamespace.PACKAGE_NAMESPACE, Collections.unmodifiableList(pkgReqs));
         requirements = Collections.unmodifiableMap(reqs);

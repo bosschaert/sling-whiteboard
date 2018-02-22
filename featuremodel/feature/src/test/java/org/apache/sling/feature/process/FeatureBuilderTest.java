@@ -34,8 +34,8 @@ import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.Include;
-import org.apache.sling.feature.ResourceCapability;
-import org.apache.sling.feature.ResourceRequirement;
+import org.apache.sling.feature.OSGiCapability;
+import org.apache.sling.feature.OSGiRequirement;
 import org.junit.Test;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
@@ -198,17 +198,17 @@ public class FeatureBuilderTest {
     @Test public void testNoIncludesNoUpgrade() throws Exception {
         final Feature base = new Feature(ArtifactId.parse("org.apache.sling/test-feature/1.1"));
 
-        final Requirement r1 = new ResourceRequirement("osgi.contract",
+        final Requirement r1 = new OSGiRequirement("osgi.contract",
                 Collections.emptyMap(), Collections.singletonMap("filter", "(&(osgi.contract=JavaServlet)(version=3.1))"));
         base.getRequirements().add(r1);
 
         Map<String, Object> attrs = new HashMap<>();
         attrs.put("osgi.implementation", "osgi.http");
         attrs.put("version:Version", "1.1");
-        final Capability c1 = new ResourceCapability("osgi.implementation", attrs,
+        final Capability c1 = new OSGiCapability("osgi.implementation", attrs,
                 Collections.singletonMap("uses", "javax.servlet,javax.servlet.http,org.osgi.service.http.context,org.osgi.service.http.whiteboard"));
         base.getCapabilities().add(c1);
-        final Capability c2 = new ResourceCapability("osgi.service",
+        final Capability c2 = new OSGiCapability("osgi.service",
                 Collections.singletonMap("objectClass:List<String>", "org.osgi.service.http.runtime.HttpServiceRuntime"),
                 Collections.singletonMap("uses", "org.osgi.service.http.runtime,org.osgi.service.http.runtime.dto"));
         base.getCapabilities().add(c2);
@@ -247,14 +247,14 @@ public class FeatureBuilderTest {
         final Include i1 = new Include(ArtifactId.parse("g/a/1"));
         base.getIncludes().add(i1);
 
-        final Requirement r1 = new ResourceRequirement("osgi.contract",
+        final Requirement r1 = new OSGiRequirement("osgi.contract",
                 Collections.emptyMap(), Collections.singletonMap("filter", "(&(osgi.contract=JavaServlet)(version=3.1))"));
         base.getRequirements().add(r1);
 
         Map<String, Object> attrs = new HashMap<>();
         attrs.put("osgi.implementation", "osgi.http");
         attrs.put("version:Version", "1.1");
-        final Capability c1 = new ResourceCapability("osgi.implementation", attrs,
+        final Capability c1 = new OSGiCapability("osgi.implementation", attrs,
                 Collections.singletonMap("uses", "javax.servlet,javax.servlet.http,org.osgi.service.http.context,org.osgi.service.http.whiteboard"));
         base.getCapabilities().add(c1);
 

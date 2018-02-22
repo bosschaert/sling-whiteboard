@@ -24,7 +24,7 @@ import org.osgi.resource.Resource;
 /**
  * Implementation of the OSGi Requirement interface.
  */
-public class ResourceRequirement extends AbstractCapabilityRequirement implements Requirement {
+public class OSGiRequirement extends AbstractCapabilityRequirement implements Requirement {
     /**
      * Create a requirement that is not associated with a resource.
      * @param res The resource associated with the requirement.
@@ -32,7 +32,7 @@ public class ResourceRequirement extends AbstractCapabilityRequirement implement
      * @param attrs The attributes of the requirement.
      * @param dirs The directives of the requirement.
      */
-    public ResourceRequirement(String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+    public OSGiRequirement(String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         this(null, ns, attrs, dirs);
     }
 
@@ -43,7 +43,7 @@ public class ResourceRequirement extends AbstractCapabilityRequirement implement
      * @param attrs The attributes of the requirement.
      * @param dirs The directives of the requirement.
      */
-    public ResourceRequirement(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+    public OSGiRequirement(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         super(res, ns, attrs, dirs);
     }
 }

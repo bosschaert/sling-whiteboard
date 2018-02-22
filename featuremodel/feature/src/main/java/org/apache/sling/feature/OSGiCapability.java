@@ -24,7 +24,7 @@ import org.osgi.resource.Resource;
 /**
  * Implementation of the OSGi Capability interface.
  */
-public class ResourceCapability extends AbstractCapabilityRequirement implements Capability {
+public class OSGiCapability extends AbstractCapabilityRequirement implements Capability {
     /**
      * Create a capability that is not associated with a resource.
      * @param res The resource associated with the capability. May be null.
@@ -32,7 +32,7 @@ public class ResourceCapability extends AbstractCapabilityRequirement implements
      * @param attrs The attributes of the capability.
      * @param dirs The directives of the capability.
      */
-    public ResourceCapability(String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+    public OSGiCapability(String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         this(null, ns, attrs, dirs);
     }
 
@@ -43,7 +43,7 @@ public class ResourceCapability extends AbstractCapabilityRequirement implements
      * @param attrs The attributes of the capability.
      * @param dirs The directives of the capability.
      */
-    public ResourceCapability(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
+    public OSGiCapability(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         super(res, ns, attrs, dirs);
     }
 }

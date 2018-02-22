@@ -35,8 +35,8 @@ import org.apache.felix.configurator.impl.json.JSONUtil;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.Include;
-import org.apache.sling.feature.ResourceCapability;
-import org.apache.sling.feature.ResourceRequirement;
+import org.apache.sling.feature.OSGiCapability;
+import org.apache.sling.feature.OSGiRequirement;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 
@@ -290,7 +290,7 @@ public class FeatureJSONReader extends JSONReaderBase {
                     dirs.forEach(rethrowBiConsumer((key, value) -> unmarshalDirective(key, value, dirMap::put)));
                 }
 
-                final Requirement r = new ResourceRequirement(obj.get(JSONConstants.REQCAP_NAMESPACE).toString(), attrMap, dirMap);
+                final Requirement r = new OSGiRequirement(obj.get(JSONConstants.REQCAP_NAMESPACE).toString(), attrMap, dirMap);
                 feature.getRequirements().add(r);
             }
         }
@@ -329,7 +329,7 @@ public class FeatureJSONReader extends JSONReaderBase {
                     dirs.forEach(rethrowBiConsumer((key, value) -> unmarshalDirective(key, value, dirMap::put)));
                 }
 
-                final Capability c = new ResourceCapability(obj.get(JSONConstants.REQCAP_NAMESPACE).toString(), attrMap, dirMap);
+                final Capability c = new OSGiCapability(obj.get(JSONConstants.REQCAP_NAMESPACE).toString(), attrMap, dirMap);
                 feature.getCapabilities().add(c);
             }
         }

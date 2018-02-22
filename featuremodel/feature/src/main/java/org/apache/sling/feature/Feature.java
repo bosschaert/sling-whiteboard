@@ -330,13 +330,13 @@ public class Feature implements Comparable<Feature> {
 
         // requirements
         for(final Requirement r : this.getRequirements()) {
-            final Requirement c = new ResourceRequirement(r.getNamespace(), r.getAttributes(), r.getDirectives());
+            final Requirement c = new OSGiRequirement(r.getNamespace(), r.getAttributes(), r.getDirectives());
             result.getRequirements().add(c);
         }
 
         // capabilities
         for(final Capability r : this.getCapabilities()) {
-            final Capability c = new ResourceCapability(r.getNamespace(), r.getAttributes(), r.getDirectives());
+            final Capability c = new OSGiCapability(r.getNamespace(), r.getAttributes(), r.getDirectives());
             result.getCapabilities().add(c);
         }
 
