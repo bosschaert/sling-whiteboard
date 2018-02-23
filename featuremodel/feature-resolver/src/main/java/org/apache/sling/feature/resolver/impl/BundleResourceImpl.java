@@ -31,6 +31,7 @@ import org.apache.sling.feature.support.util.PackageInfo;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
 import org.osgi.framework.namespace.BundleNamespace;
+import org.osgi.framework.namespace.ExecutionEnvironmentNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
@@ -40,6 +41,7 @@ import org.osgi.resource.Resource;
  * Implementation of the OSGi Resource interface.
  */
 public class BundleResourceImpl implements Resource {
+    final String hint;
     final Map<String, List<Capability>> capabilities;
     final Map<String, List<Requirement>> requirements;
 
@@ -48,6 +50,7 @@ public class BundleResourceImpl implements Resource {
      * @param bd The BundleDescriptor to represent.
      */
     public BundleResourceImpl(BundleDescriptor bd) {
+        hint = bd.getBundleSymbolicName() + " " + bd.getBundleVersion();
         Map<String, List<Capability>> caps = new HashMap<>();
         for (Capability c : bd.getCapabilities()) {
             List<Capability> l = caps.get(c.getNamespace());
@@ -55,7 +58,7 @@ public class BundleResourceImpl implements Resource {
                 l = new ArrayList<>();
                 caps.put(c.getNamespace(), l);
             }
-            l.add(c);
+            l.add(new OSGiCapability(this, c));
         }
 
         // Add the package capabilities (export package)
@@ -85,8 +88,12 @@ public class BundleResourceImpl implements Resource {
                 l = new ArrayList<>();
                 reqs.put(r.getNamespace(), l);
             }
-            l.add(r);
+            // Add the requirement and associate with this resource
+            l.add(new OSGiRequirement(this, r));
         }
+
+        // TODO What do we do with the execution environment?
+        reqs.remove(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE);
 
         // Add the package requirements (import package)
         List<Requirement> pkgReqs = new ArrayList<>();
@@ -117,6 +124,7 @@ public class BundleResourceImpl implements Resource {
      * @param reqs The requirements of the resource.
      */
     public BundleResourceImpl(Map<String, List<Capability>> caps, Map<String, List<Requirement>> reqs) {
+        hint = "" + System.identityHashCode(this);
         capabilities = caps;
         requirements = reqs;
     }
@@ -178,6 +186,6 @@ public class BundleResourceImpl implements Resource {
 
     @Override
     public String toString() {
-        return "ResourceImpl [" + getCapabilities(BundleNamespace.BUNDLE_NAMESPACE) + "]";
+        return "BundleResourceImpl [" + hint + "]";
     }
 }

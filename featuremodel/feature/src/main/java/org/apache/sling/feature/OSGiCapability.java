@@ -46,4 +46,14 @@ public class OSGiCapability extends AbstractCapabilityRequirement implements Cap
     public OSGiCapability(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         super(res, ns, attrs, dirs);
     }
+
+    /**
+     * Create a capability based on an existing capability, providing the resource.
+     * The namespace, attributes and directives are copied from the provided capability.
+     * @param resource The resource to be associated with the capability
+     * @param capability The capability to base the new requirement on.
+     */
+    public OSGiCapability(Resource resource, Capability capability) {
+        this(resource, capability.getNamespace(), capability.getAttributes(), capability.getDirectives());
+    }
 }

@@ -21,10 +21,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
@@ -101,13 +103,13 @@ public class FrameworkResolver implements FeatureResolver {
     @Override
     public List<Feature> orderFeatures(List<Feature> features) {
         try {
-            return orderFeatures2(features);
+            return internalOrderFeatures(features);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public List<Feature> orderFeatures2(List<? extends Feature> features) throws IOException {
+    public List<Feature> internalOrderFeatures(List<Feature> features) throws IOException {
         Map<Resource, Feature> bundleMap = new HashMap<>();
         for (Feature f : features) {
             for (Artifact b : f.getBundles()) {
@@ -117,10 +119,11 @@ public class FrameworkResolver implements FeatureResolver {
             }
         }
 
+        Set<Resource> availableBundles = new HashSet<>(bundleMap.keySet());
         // Add these to the available features
         Artifact lpa = new Artifact(ArtifactId.parse("org.apache.sling/org.apache.sling.launchpad.api/1.2.0"));
-        bundleMap.put(new BundleResourceImpl(getBundleDescriptor(artifactManager, lpa)), null);
-        bundleMap.put(frameworkResource, null);
+        availableBundles.add(new BundleResourceImpl(getBundleDescriptor(artifactManager, lpa)));
+        availableBundles.add(frameworkResource);
 
         List<Resource> orderedBundles = new LinkedList<>();
         try {
@@ -129,7 +132,7 @@ public class FrameworkResolver implements FeatureResolver {
                     // Already handled
                     continue;
                 }
-                Map<Resource, List<Wire>> deps = resolver.resolve(new ResolveContextImpl(bundle, bundleMap.keySet()));
+                Map<Resource, List<Wire>> deps = resolver.resolve(new ResolveContextImpl(bundle, availableBundles));
 
                 for (Map.Entry<Resource, List<Wire>> entry : deps.entrySet()) {
                     Resource curBundle = entry.getKey();

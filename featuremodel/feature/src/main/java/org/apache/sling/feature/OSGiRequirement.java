@@ -46,4 +46,14 @@ public class OSGiRequirement extends AbstractCapabilityRequirement implements Re
     public OSGiRequirement(Resource res, String ns, Map<String, Object> attrs, Map<String, String> dirs) {
         super(res, ns, attrs, dirs);
     }
+
+    /**
+     * Create a requirement based on an existing requirement, providing the resource.
+     * The namespace, attributes and directives are copied from the provided requirement.
+     * @param resource The resource to be associated with the requirement
+     * @param requirement The requirement to base the new requirement on.
+     */
+    public OSGiRequirement(Resource resource, Requirement requirement) {
+        this(resource, requirement.getNamespace(), requirement.getAttributes(), requirement.getDirectives());
+    }
 }
