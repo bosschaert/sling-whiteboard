@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -133,6 +134,35 @@ public class BundleResourceImplTest {
                 reqTar.getDirectives().get(PackageNamespace.REQUIREMENT_FILTER_DIRECTIVE));
         assertEquals(PackageNamespace.RESOLUTION_OPTIONAL,
                 reqTar.getDirectives().get(PackageNamespace.REQUIREMENT_RESOLUTION_DIRECTIVE));
+    }
+
+    @Test
+    public void testBundleResourceGenericCapReq() throws Exception {
+        ArtifactId id = new ArtifactId("org.apache", "org.apache.someartifact", "0.0.0", null, null);
+        Artifact artifact = new Artifact(id);
+
+        Capability cap = new OSGiCapability("org.example.cap1",
+                Collections.singletonMap("intAttr", 999),
+                Collections.singletonMap("somedir", "mydir"));
+        Set<Capability> caps = Collections.singleton(cap);
+
+        Requirement req1 = new OSGiRequirement("org.example.req1",
+                Collections.singletonMap("boolAttr", true),
+                Collections.singletonMap("adir", "aval"));
+        Requirement req2 = new OSGiRequirement("org.example.req2",
+                Collections.singletonMap("boolAttr", false),
+                Collections.singletonMap("adir", "aval2"));
+        Set<Requirement> reqs = new HashSet<>(Arrays.asList(req1, req2));
+        BundleDescriptorImpl bd = new BundleDescriptorImpl(artifact, Collections.emptySet(), reqs, caps);
+
+        Resource res = new BundleResourceImpl(bd);
+
+        assertEquals(caps, new HashSet<>(res.getCapabilities("org.example.cap1")));
+        assertEquals(Collections.singleton(req1),
+                new HashSet<>(res.getRequirements("org.example.req1")));
+        assertEquals(Collections.singleton(req2),
+                new HashSet<>(res.getRequirements("org.example.req2")));
+        assertEquals(reqs, new HashSet<>(res.getRequirements(null)));
     }
 
     private void setField(Class<?> cls, String field, Object obj, Object val) throws Exception {
