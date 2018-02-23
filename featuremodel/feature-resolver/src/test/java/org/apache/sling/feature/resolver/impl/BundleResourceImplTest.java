@@ -165,12 +165,6 @@ public class BundleResourceImplTest {
         assertEquals(reqs, new HashSet<>(res.getRequirements(null)));
     }
 
-    private void setField(Class<?> cls, String field, Object obj, Object val) throws Exception {
-        Field f = cls.getDeclaredField(field);
-        f.setAccessible(true);
-        f.set(obj, val);
-    }
-
     private Object getCapAttribute(Resource res, String ns, String attr) {
         List<Capability> caps = res.getCapabilities(ns);
         if (caps.size() == 0)
@@ -180,12 +174,9 @@ public class BundleResourceImplTest {
         return cap.getAttributes().get(attr);
     }
 
-    private Object getReqDirective(Resource res, String ns, String attr) {
-        List<Requirement> reqs = res.getRequirements(ns);
-        if (reqs.size() == 0)
-            return null;
-
-        Requirement req = reqs.iterator().next();
-        return req.getDirectives().get(attr);
+    private void setField(Class<?> cls, String field, Object obj, Object val) throws Exception {
+        Field f = cls.getDeclaredField(field);
+        f.setAccessible(true);
+        f.set(obj, val);
     }
 }
