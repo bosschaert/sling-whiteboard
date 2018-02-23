@@ -59,14 +59,14 @@ public class FrameworkResolver implements FeatureResolver {
     private final Resource frameworkResource;
     private final Framework framework;
 
-    public FrameworkResolver(ArtifactManager am) {
+    public FrameworkResolver(ArtifactManager am, Map<String, String> frameworkProperties) {
         artifactManager = am;
 
         Resolver r = null;
         // Launch an OSGi framework and obtain its resolver
         try {
             FrameworkFactory fwf = ServiceLoader.load(FrameworkFactory.class).iterator().next();
-            framework = fwf.newFramework(Collections.emptyMap());
+            framework = fwf.newFramework(frameworkProperties);
             framework.init();
             framework.start();
             BundleContext ctx = framework.getBundleContext();

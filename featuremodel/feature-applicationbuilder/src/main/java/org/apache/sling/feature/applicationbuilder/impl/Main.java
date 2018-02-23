@@ -19,6 +19,7 @@ package org.apache.sling.feature.applicationbuilder.impl;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
@@ -121,7 +122,7 @@ public class Main {
     }
 
     private static FeatureResolver getFeatureResolver(ArtifactManager am) {
-        return new FrameworkResolver(am);
+        return new FrameworkResolver(am, Collections.emptyMap());
     }
 
     public static void main(final String[] args) {

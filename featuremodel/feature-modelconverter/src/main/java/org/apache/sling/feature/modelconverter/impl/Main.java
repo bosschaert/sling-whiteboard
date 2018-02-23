@@ -168,7 +168,7 @@ public class Main {
     }
 
     private static FeatureResolver getFeatureResolver(ArtifactManager am) {
-        return new FrameworkResolver(am);
+        return new FrameworkResolver(am, Collections.emptyMap());
     }
 
     public static void main(final String[] args) {

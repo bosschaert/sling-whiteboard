@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -61,7 +62,7 @@ public class FeatureProcessor {
             }
 
         } else {
-            try (FeatureResolver resolver = new FrameworkResolver(artifactManager)) {
+            try (FeatureResolver resolver = new FrameworkResolver(artifactManager, Collections.emptyMap())) {
                 app = FeatureUtil.assembleApplication(null, artifactManager, resolver,
                        FeatureUtil.getFeatureFiles(config.getHomeDirectory(), config.getFeatureFiles()).toArray(new String[0]));
             } catch (Exception ex) {
