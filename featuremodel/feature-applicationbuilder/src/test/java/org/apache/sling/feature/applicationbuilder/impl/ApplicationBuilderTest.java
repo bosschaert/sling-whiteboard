@@ -70,12 +70,7 @@ public class ApplicationBuilderTest {
 
     @Test
     public void testBundleOrdering() throws Exception {
-        FeatureProvider fp = new FeatureProvider() {
-            @Override
-            public Feature provide(ArtifactId id) {
-                return null;
-            }
-        };
+        FeatureProvider fp = new TestFeatureProvider();
         BuilderContext bc = new BuilderContext(fp);
         ArtifactManager am = ArtifactManager.getArtifactManager(new ArtifactManagerConfig());
 
@@ -98,6 +93,30 @@ public class ApplicationBuilderTest {
         }
     }
 
+    @Test
+    public void testFeatureDependency() throws Exception {
+        FeatureProvider fp = new TestFeatureProvider();
+        BuilderContext bc = new BuilderContext(fp);
+        ArtifactManager am = ArtifactManager.getArtifactManager(new ArtifactManagerConfig());
+
+        // Feature D has a bundle (slf4j-api) with a dependency on feature C,
+        // which provides a package for slf4j
+        Feature fc = readFeature("/featureC.json", am);
+        Feature fd = readFeature("/featureD.json", am);
+        Feature[] features = {fd, fc};
+
+        try (FeatureResolver fr = new FrameworkResolver(am, getFrameworkProps())) {
+            Application app = ApplicationBuilder.assemble(null, bc, fr, features);
+            String genApp = writeApplication(app);
+
+            String expected = "{\"features\":["
+                    + "\"org.apache.sling.test.features:featureC:1.0.0\","
+                    + "\"org.apache.sling.test.features:featureD:1.0.0\"],"
+                    + "\"bundles\":[{\"id\":\"org.slf4j:slf4j-api:1.7.25\",\"start-order\":\"6\"}]}";
+            assertEquals(expected, genApp);
+        }
+    }
+
     private static String writeApplication(Application app) throws Exception {
         Writer writer = new StringWriter();
         ApplicationJSONWriter.write(writer, app);
@@ -113,6 +132,13 @@ public class ApplicationBuilderTest {
         try (final FileReader r = new FileReader(featureArtifact.getFile())) {
             final Feature f = FeatureJSONReader.read(r, featureArtifact.getUrl());
             return f;
+        }
+    }
+
+    private static class TestFeatureProvider implements FeatureProvider {
+        @Override
+        public Feature provide(ArtifactId id) {
+            return null;
         }
     }
 }

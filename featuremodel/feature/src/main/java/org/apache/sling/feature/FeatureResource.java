@@ -16,12 +16,26 @@
  */
 package org.apache.sling.feature;
 
+import org.osgi.framework.Version;
 import org.osgi.resource.Resource;
 
 /**
  * A Resource that is associated with an Maven Artifact and belongs to a Feature.
  */
 public interface FeatureResource extends Resource {
+    /**
+     * Obtain the ID of the resource. If the resource is a bundle then this
+     * is the bundle symbolic name.
+     * @return The ID of the resource.
+     */
+    String getId();
+
+    /**
+     * Obtain the version of the resource.
+     * @return The version of the resource.
+     */
+    Version getVersion();
+
     /**
      * Obtain the associated (Maven) Artifact.
      * @return The artifact for this Resource.

@@ -16,17 +16,6 @@
  */
 package org.apache.sling.feature.resolver;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
-
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
@@ -35,6 +24,7 @@ import org.apache.sling.feature.analyser.BundleDescriptor;
 import org.apache.sling.feature.analyser.impl.BundleDescriptorImpl;
 import org.apache.sling.feature.process.FeatureResolver;
 import org.apache.sling.feature.resolver.impl.BundleResourceImpl;
+import org.apache.sling.feature.resolver.impl.FeatureResourceImpl;
 import org.apache.sling.feature.resolver.impl.ResolveContextImpl;
 import org.apache.sling.feature.support.ArtifactManager;
 import org.osgi.framework.BundleContext;
@@ -44,6 +34,7 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.HostNamespace;
+import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.resource.Capability;
@@ -53,10 +44,19 @@ import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.resolver.Resolver;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+
 public class FrameworkResolver implements FeatureResolver {
     private final ArtifactManager artifactManager;
     private final Resolver resolver;
-    private final Resource frameworkResource;
+    private final FeatureResource frameworkResource;
     private final Framework framework;
 
     public FrameworkResolver(ArtifactManager am, Map<String, String> frameworkProperties) {
@@ -72,10 +72,13 @@ public class FrameworkResolver implements FeatureResolver {
             BundleContext ctx = framework.getBundleContext();
 
             // Create a resource representing the framework
+            Map<String, List<Capability>> capabilities = new HashMap<>();
             BundleRevision br = framework.adapt(BundleRevision.class);
-            List<Capability> caps = br.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE);
-            frameworkResource = new BundleResourceImpl(framework.getSymbolicName(), framework.getVersion().toString(), null, null,
-                    Collections.singletonMap(PackageNamespace.PACKAGE_NAMESPACE, caps), Collections.emptyMap());
+            capabilities.put(PackageNamespace.PACKAGE_NAMESPACE, br.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE));
+            capabilities.put(BundleNamespace.BUNDLE_NAMESPACE, br.getCapabilities(BundleNamespace.BUNDLE_NAMESPACE));
+            capabilities.put(IdentityNamespace.IDENTITY_NAMESPACE, br.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE));
+            frameworkResource = new BundleResourceImpl(framework.getSymbolicName(), framework.getVersion(), null, null,
+                    capabilities, Collections.emptyMap());
 
             int i=0;
             while (i < 20) {
@@ -110,59 +113,80 @@ public class FrameworkResolver implements FeatureResolver {
     }
 
     public List<FeatureResource> internalOrderFeatures(List<Feature> features) throws IOException {
-        Map<FeatureResource, Feature> bundleMap = new HashMap<>();
-        Map<String, FeatureResource> bsnVerMap = new HashMap<>();
+        Map<Feature, FeatureResource> featureMap = new HashMap<>();
+        Map<FeatureResource, Feature> resourceMap = new HashMap<>();
         for (Feature f : features) {
+            FeatureResourceImpl fr = new FeatureResourceImpl(f);
+            resourceMap.put(fr, f);
+            featureMap.put(f, fr);
+
             for (Artifact b : f.getBundles()) {
                 BundleDescriptor bd = getBundleDescriptor(artifactManager, b);
                 FeatureResource r = new BundleResourceImpl(bd, f);
-                bundleMap.put(r, f);
-                bsnVerMap.put(bd.getBundleSymbolicName() + " " + bd.getBundleVersion(), r);
+                resourceMap.put(r, f);
             }
         }
 
-        Set<Resource> availableBundles = new HashSet<>(bundleMap.keySet());
-        // Add these to the available features
-        Artifact lpa = new Artifact(ArtifactId.parse("org.apache.sling/org.apache.sling.launchpad.api/1.2.0"));
-        availableBundles.add(new BundleResourceImpl(getBundleDescriptor(artifactManager, lpa), null));
-        availableBundles.add(frameworkResource);
+        Map<String, FeatureResource> idVerMap = new HashMap<>();
+        for (FeatureResource fr : resourceMap.keySet()) {
+            idVerMap.put(fr.getId() + ":" + fr.getVersion(), fr);
+        }
 
-        List<FeatureResource> orderedBundles = new LinkedList<>();
+        // Add these too
+        Artifact lpa = new Artifact(ArtifactId.parse("org.apache.sling/org.apache.sling.launchpad.api/1.2.0"));
+        idVerMap.put("org.apache.sling.launchpad.api:1.2.0", new BundleResourceImpl(getBundleDescriptor(artifactManager, lpa), null));
+        idVerMap.put(framework.getSymbolicName() + ":" + framework.getVersion(), frameworkResource);
+
+        List<FeatureResource> orderedResources = new LinkedList<>();
         try {
-            for (Resource bundle : bundleMap.keySet()) {
-                if (orderedBundles.contains(bundle)) {
+            for (FeatureResource resource : resourceMap.keySet()) {
+                if (orderedResources.contains(resource)) {
                     // Already handled
                     continue;
                 }
-                Map<Resource, List<Wire>> deps = resolver.resolve(new ResolveContextImpl(bundle, availableBundles));
+                Map<Resource, List<Wire>> deps = resolver.resolve(new ResolveContextImpl(resource, idVerMap.values()));
 
                 for (Map.Entry<Resource, List<Wire>> entry : deps.entrySet()) {
-                    Resource depBundle = entry.getKey();
-                    FeatureResource curBundle = getFeatureResource(depBundle, bsnVerMap);
-                    if (curBundle == null)
+                    if (resource.equals(entry.getKey()))
                         continue;
 
-                    if (!orderedBundles.contains(curBundle)) {
-                        orderedBundles.add(curBundle);
+                    Resource depResource = entry.getKey();
+                    FeatureResource curResource = getFeatureResource(depResource, idVerMap);
+                    if (curResource == null)
+                        continue;
+
+                    if (!orderedResources.contains(curResource)) {
+                        orderedResources.add(curResource);
                     }
 
                     for (Wire w : entry.getValue()) {
-                        FeatureResource provBundle = getFeatureResource(w.getProvider(), bsnVerMap);
+                        FeatureResource provBundle = getFeatureResource(w.getProvider(), idVerMap);
                         if (provBundle == null)
                             continue;
 
-                        int curBundleIdx = orderedBundles.indexOf(curBundle);
-                        int newBundleIdx = orderedBundles.indexOf(provBundle);
+                        int curBundleIdx = orderedResources.indexOf(curResource);
+                        int newBundleIdx = orderedResources.indexOf(provBundle);
                         if (newBundleIdx >= 0) {
                             if (curBundleIdx < newBundleIdx) {
                                 // If the list already contains the providing but after the current bundle, remove it there to move it before the current bundle
-                                orderedBundles.remove(provBundle);
+                                orderedResources.remove(provBundle);
                             } else {
                                 // If the providing bundle is already before the current bundle, then no need to change anything
                                 continue;
                             }
                         }
-                        orderedBundles.add(curBundleIdx, provBundle);
+                        orderedResources.add(curBundleIdx, provBundle);
+                    }
+                }
+
+                // All of the dependencies of the resource have been added, now add the resource itself
+                if (!orderedResources.contains(resource)) {
+                    Feature associatedFeature = resource.getFeature();
+                    if (resource.equals(featureMap.get(associatedFeature))) {
+                        // The resource is a feature resource, don't add this one by itself.
+                    }
+                    else {
+                        orderedResources.add(resource);
                     }
                 }
             }
@@ -171,36 +195,59 @@ public class FrameworkResolver implements FeatureResolver {
         }
 
         // Sort the fragments so that fragments are started before the host bundle
-        for (int i=0; i<orderedBundles.size(); i++) {
-            Resource r = orderedBundles.get(i);
+        for (int i=0; i<orderedResources.size(); i++) {
+            Resource r = orderedResources.get(i);
             List<Requirement> reqs = r.getRequirements(HostNamespace.HOST_NAMESPACE);
             if (reqs.size() > 0) {
                 // This is a fragment
                 Requirement req = reqs.iterator().next(); // TODO handle more host requirements
                 String bsn = req.getAttributes().get(HostNamespace.HOST_NAMESPACE).toString(); // TODO this is not valid, should obtain from filter
-                int idx = getBundleIndex(orderedBundles, bsn); // TODO check for filter too
+                int idx = getBundleIndex(orderedResources, bsn); // TODO check for filter too
                 if (idx < i) {
                     // the fragment is after the host, and should be moved to be before the host
-                    FeatureResource frag = orderedBundles.remove(i);
-                    orderedBundles.add(idx, frag);
+                    FeatureResource frag = orderedResources.remove(i);
+                    orderedResources.add(idx, frag);
                 }
             }
         }
 
-        return orderedBundles;
+        // Add the features at the appropriate place to the ordered resources list
+        for (int i=0; i<orderedResources.size(); i++) {
+            FeatureResource r = orderedResources.get(i);
+            FeatureResource associatedFeature = featureMap.get(r.getFeature());
+            if (associatedFeature == null)
+                continue;
+
+            int idx = orderedResources.indexOf(associatedFeature);
+            if (idx > i) {
+                orderedResources.remove(idx);
+                orderedResources.add(i, associatedFeature);
+            } else if (idx == -1) {
+                orderedResources.add(i, associatedFeature);
+            }
+        }
+
+        // If the framework shows up as a dependency, remove it as it's always there
+        orderedResources.remove(frameworkResource);
+
+        return orderedResources;
     }
 
-    private FeatureResource getFeatureResource(Resource res, Map<String, FeatureResource> bsnVerMap) {
-        List<Capability> caps = res.getCapabilities(BundleNamespace.BUNDLE_NAMESPACE);
+    private FeatureResource getFeatureResource(Resource res, Map<String, FeatureResource> idVerMap) {
+        if (res instanceof FeatureResource)
+            return (FeatureResource) res;
+
+        // Obtain the identity from the resource and look up in the resource
+        List<Capability> caps = res.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE);
         if (caps.size() == 0) {
             return null;
         }
         Capability cap = caps.get(0);
         Map<String, Object> attrs = cap.getAttributes();
-        Object bsn = attrs.get(BundleNamespace.BUNDLE_NAMESPACE);
-        Object ver = attrs.get(BundleNamespace.CAPABILITY_BUNDLE_VERSION_ATTRIBUTE);
-        String bsnVer = "" + bsn + " " + ver;
-        return bsnVerMap.get(bsnVer);
+        Object id = attrs.get(IdentityNamespace.IDENTITY_NAMESPACE);
+        Object ver = attrs.get(IdentityNamespace.CAPABILITY_VERSION_ATTRIBUTE);
+        String idVer = "" + id + ":" + ver;
+        return idVerMap.get(idVer);
     }
 
     private static int getBundleIndex(List<FeatureResource> bundles, String bundleSymbolicName) {

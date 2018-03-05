@@ -16,19 +16,10 @@
  */
 package org.apache.sling.feature.resolver.impl;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.BundleResource;
 import org.apache.sling.feature.Feature;
+import org.apache.sling.feature.FeatureResource;
 import org.apache.sling.feature.OSGiCapability;
 import org.apache.sling.feature.OSGiRequirement;
 import org.apache.sling.feature.analyser.BundleDescriptor;
@@ -43,6 +34,15 @@ import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -70,7 +70,7 @@ public class BundleResourceImplTest {
         List<Requirement> reqList = Collections.singletonList(r1);
         Artifact art = Mockito.mock(Artifact.class);
         Feature feat = Mockito.mock(Feature.class);
-        BundleResource res = new BundleResourceImpl("a.b.c", "1.2.3", art, feat, caps,
+        FeatureResource res = new BundleResourceImpl("a.b.c", "1.2.3", art, feat, caps,
                 Collections.singletonMap("ns.1", reqList));
 
         assertEquals(0, res.getCapabilities("nonexistent").size());
@@ -84,8 +84,8 @@ public class BundleResourceImplTest {
         assertTrue(mergedCaps.containsAll(capLst2));
         assertEquals(reqList, res.getRequirements(null));
 
-        assertEquals("a.b.c", res.getSymbolicName());
-        assertEquals("1.2.3", res.getVersion());
+        assertEquals("a.b.c", res.getId());
+        assertEquals(new Version("1.2.3"), res.getVersion());
         assertSame(art, res.getArtifact());
         assertSame(feat, res.getFeature());
     }

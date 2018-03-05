@@ -16,14 +16,14 @@
  */
 package org.apache.sling.feature.process;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.sling.feature.Application;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.FeatureResource;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Build an application based on features.
@@ -118,10 +118,10 @@ public class ApplicationBuilder {
         }
 
         // order by dependency chain
-        final List<FeatureResource> sortedBundleList = resolver.orderResources(featureList);
+        final List<FeatureResource> sortedResources = resolver.orderResources(featureList);
 
         final List<Feature> sortedFeatures = new ArrayList<>();
-        for (final FeatureResource fr : sortedBundleList) {
+        for (final FeatureResource fr : sortedResources) {
             Feature f = fr.getFeature();
             if (!sortedFeatures.contains(f)) {
                 sortedFeatures.add(f);

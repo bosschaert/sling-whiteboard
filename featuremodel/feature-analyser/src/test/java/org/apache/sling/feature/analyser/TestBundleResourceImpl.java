@@ -17,8 +17,8 @@
 package org.apache.sling.feature.analyser;
 
 import org.apache.sling.feature.Artifact;
-import org.apache.sling.feature.BundleResource;
 import org.apache.sling.feature.Feature;
+import org.apache.sling.feature.FeatureResource;
 import org.apache.sling.feature.OSGiCapability;
 import org.apache.sling.feature.OSGiRequirement;
 import org.apache.sling.feature.support.util.PackageInfo;
@@ -41,10 +41,10 @@ import java.util.stream.Collectors;
 /**
  * Implementation of the OSGi Resource interface, used by the test
  */
-public class TestBundleResourceImpl implements BundleResource {
+public class TestBundleResourceImpl implements FeatureResource {
     final Artifact artifact;
     final String bsn;
-    final String version;
+    final Version version;
     final Map<String, List<Capability>> capabilities;
     final Map<String, List<Requirement>> requirements;
     final Feature feature;
@@ -56,7 +56,7 @@ public class TestBundleResourceImpl implements BundleResource {
     public TestBundleResourceImpl(BundleDescriptor bd, Feature feat) {
         artifact = bd.getArtifact();
         bsn = bd.getBundleSymbolicName();
-        version = bd.getBundleVersion();
+        version = bd.getArtifact().getId().getOSGiVersion();
         feature = feat;
 
         Map<String, List<Capability>> caps = new HashMap<>();
@@ -125,27 +125,18 @@ public class TestBundleResourceImpl implements BundleResource {
         requirements = Collections.unmodifiableMap(reqs);
     }
 
-    public TestBundleResourceImpl(String sn, String ver, Artifact art, Feature feat, Map<String, List<Capability>> caps, Map<String, List<Requirement>> reqs) {
-        artifact = art;
-        bsn = sn;
-        version = ver;
-        feature = feat;
-        capabilities = caps;
-        requirements = reqs;
-    }
-
     @Override
     public Artifact getArtifact() {
         return artifact;
     }
 
     @Override
-    public String getSymbolicName() {
+    public String getId() {
         return bsn;
     }
 
     @Override
-    public String getVersion() {
+    public Version getVersion() {
         return version;
     }
 
