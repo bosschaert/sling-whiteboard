@@ -16,12 +16,13 @@
  */
 package org.apache.sling.feature.process;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.sling.feature.Application;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Build an application based on features.
@@ -37,7 +38,7 @@ public class ApplicationBuilder {
      *
      * @param app The optional application to use as a base.
      * @param context The builder context
-     * @param resolver The Feature Resolver to use
+     * @param resolver The Feature Resolver to use, null to not use a resolver
      * @param featureIds The feature ids
      * @return The application
      * throws IllegalArgumentException If context or featureIds is {@code null}
@@ -118,8 +119,12 @@ public class ApplicationBuilder {
             }
         }
 
-        // order by dependency chain
-        sortedFeatureList = resolver.orderFeatures(sortedFeatureList);
+        if (resolver != null) {
+            // order by dependency chain
+            sortedFeatureList = resolver.orderFeatures(sortedFeatureList);
+        } else {
+            Collections.sort(sortedFeatureList);
+        }
 
         // assemble
         for(final Feature f : sortedFeatureList) {
