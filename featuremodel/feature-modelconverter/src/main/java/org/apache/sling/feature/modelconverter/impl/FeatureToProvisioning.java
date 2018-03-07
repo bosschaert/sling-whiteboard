@@ -18,7 +18,11 @@ package org.apache.sling.feature.modelconverter.impl;
 
 import org.apache.sling.feature.Application;
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Bundles;
+import org.apache.sling.feature.Configurations;
 import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.Extensions;
+import org.apache.sling.feature.KeyValueMap;
 import org.apache.sling.feature.process.FeatureResolver;
 import org.apache.sling.feature.support.ArtifactManager;
 import org.apache.sling.feature.support.FeatureUtil;
@@ -43,6 +47,20 @@ import java.util.Map;
 public class FeatureToProvisioning {
     private static Logger LOGGER = LoggerFactory.getLogger(FeatureToProvisioning.class);
 
+    public static void convert(File file, String output, ArtifactManager am) throws IOException {
+        org.apache.sling.feature.Feature feature = FeatureUtil.getFeature(file.getAbsolutePath(), am);
+
+        String featureName;
+        if (feature.getTitle() != null) {
+            featureName = feature.getTitle();
+        } else {
+            featureName = feature.getId().getArtifactId();
+        }
+
+        Feature newFeature = new Feature(featureName);
+        convert(newFeature, feature.getBundles(), feature.getConfigurations(), feature.getFrameworkProperties(), feature.getExtensions(), output);
+    }
+
     public static void convert(List<File> files, String output, boolean createApp, ArtifactManager am) throws Exception {
         try (FeatureResolver fr = null) { // TODO we could use the resolver: new FrameworkResolver(am)
             if ( createApp ) {
@@ -64,7 +82,7 @@ public class FeatureToProvisioning {
         }
     }
 
-    private static void convert(final Application app, final int index, String outputFile) {
+    private static void convert(final Application app, final int index, final String outputFile) {
         String featureName;
 
         List<ArtifactId> fids = app.getFeatureIds();
@@ -73,10 +91,15 @@ public class FeatureToProvisioning {
         } else {
             featureName = "application";
         }
-        final Feature f = new Feature(featureName);
+        final Feature feature = new Feature(featureName);
 
+        convert(feature, app.getBundles(), app.getConfigurations(), app.getFrameworkProperties(), app.getExtensions(), outputFile);
+    }
+
+    private static void convert(Feature f, Bundles bundles, Configurations configurations, KeyValueMap frameworkProps,
+            Extensions extensions, String outputFile) {
         // bundles
-        for(final org.apache.sling.feature.Artifact bundle : app.getBundles()) {
+        for(final org.apache.sling.feature.Artifact bundle : bundles) {
             final ArtifactId id = bundle.getId();
             final Artifact newBundle = new Artifact(id.getGroupId(), id.getArtifactId(), id.getVersion(), id.getClassifier(), id.getType());
             for(final Map.Entry<String, String> prop : bundle.getMetadata()) {
@@ -90,7 +113,7 @@ public class FeatureToProvisioning {
         }
 
         // configurations
-        for(final org.apache.sling.feature.Configuration cfg : app.getConfigurations()) {
+        for(final org.apache.sling.feature.Configuration cfg : configurations) {
             final Configuration c;
             if ( cfg.isFactoryConfiguration() ) {
                 c = new Configuration(cfg.getName(), cfg.getFactoryPid());
@@ -106,12 +129,12 @@ public class FeatureToProvisioning {
         }
 
         // framework properties
-        for(final Map.Entry<String, String> prop : app.getFrameworkProperties()) {
+        for(final Map.Entry<String, String> prop : frameworkProps) {
             f.getOrCreateRunMode(null).getSettings().put(prop.getKey(), prop.getValue());
         }
 
         // extensions: content packages and repoinit
-        for(final Extension ext : app.getExtensions()) {
+        for(final Extension ext : extensions) {
             if ( Extension.NAME_CONTENT_PACKAGES.equals(ext.getName()) ) {
                 for(final org.apache.sling.feature.Artifact cp : ext.getArtifacts() ) {
                     final ArtifactId id = cp.getId();
@@ -133,15 +156,7 @@ public class FeatureToProvisioning {
         }
 
         LOGGER.info("Writing feature...");
-        String out = outputFile;
-        if ( index > 0 ) {
-            final int lastDot = out.lastIndexOf('.');
-            if ( lastDot == -1 ) {
-                out = out + "_" + String.valueOf(index);
-            } else {
-                out = out.substring(0, lastDot) + "_" + String.valueOf(index) + out.substring(lastDot);
-            }
-        }
+        final String out = outputFile;
         final File file = new File(out);
         final Model m = new Model();
         m.getFeatures().add(f);
