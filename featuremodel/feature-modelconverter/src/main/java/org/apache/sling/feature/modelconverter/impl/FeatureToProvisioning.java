@@ -41,6 +41,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,10 +99,22 @@ public class FeatureToProvisioning {
 
     private static void convert(Feature f, Bundles bundles, Configurations configurations, KeyValueMap frameworkProps,
             Extensions extensions, String outputFile) {
+        Map<org.apache.sling.feature.Configuration, org.apache.sling.feature.Artifact> configBundleMap = new HashMap<>();
+
         // bundles
         for(final org.apache.sling.feature.Artifact bundle : bundles) {
             final ArtifactId id = bundle.getId();
             final Artifact newBundle = new Artifact(id.getGroupId(), id.getArtifactId(), id.getVersion(), id.getClassifier(), id.getType());
+
+            Object configs = bundle.getMetadata().getObject("configurations");
+            if (configs instanceof List) {
+                for (Object config : (List<?>) configs) {
+                    if (config instanceof org.apache.sling.feature.Configuration) {
+                        configBundleMap.put((org.apache.sling.feature.Configuration) config, bundle);
+                    }
+                }
+            }
+
             for(final Map.Entry<String, String> prop : bundle.getMetadata()) {
                 switch (prop.getKey()) {
                     // these are handled separately
@@ -121,13 +134,7 @@ public class FeatureToProvisioning {
                 startLevel = 20;
             }
 
-            String runMode = bundle.getMetadata().get("run-mode");
-            String[] runModes;
-            if (runMode != null) {
-                runModes = runMode.split(",");
-            } else {
-                runModes = null;
-            }
+            String[] runModes = getRunModes(bundle);
             f.getOrCreateRunMode(runModes).getOrCreateArtifactGroup(startLevel).add(newBundle);
         }
 
@@ -144,7 +151,16 @@ public class FeatureToProvisioning {
                 final String key = keys.nextElement();
                 c.getProperties().put(key, cfg.getProperties().get(key));
             }
-            f.getOrCreateRunMode(null).getConfigurations().add(c);
+
+            // Check if the configuration has an associated runmode via the bundle that it belongs to
+            org.apache.sling.feature.Artifact bundle = configBundleMap.get(cfg);
+            String[] runModes;
+            if (bundle != null) {
+                runModes = getRunModes(bundle);
+            } else {
+                runModes = null;
+            }
+            f.getOrCreateRunMode(runModes).getConfigurations().add(c);
         }
 
         // framework properties
@@ -185,5 +201,16 @@ public class FeatureToProvisioning {
             LOGGER.error("Unable to write feature to {} : {}", out, ioe.getMessage(), ioe);
             System.exit(1);
         }
+    }
+
+    private static String[] getRunModes(final org.apache.sling.feature.Artifact bundle) {
+        String runMode = bundle.getMetadata().get("run-mode");
+        String[] runModes;
+        if (runMode != null) {
+            runModes = runMode.split(",");
+        } else {
+            runModes = null;
+        }
+        return runModes;
     }
 }

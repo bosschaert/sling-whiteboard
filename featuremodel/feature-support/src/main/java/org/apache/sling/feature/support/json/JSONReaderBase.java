@@ -16,6 +16,20 @@
  */
 package org.apache.sling.feature.support.json;
 
+import org.apache.felix.configurator.impl.json.JSMin;
+import org.apache.felix.configurator.impl.json.JSONUtil;
+import org.apache.felix.configurator.impl.json.TypeConverter;
+import org.apache.felix.configurator.impl.model.Config;
+import org.apache.sling.feature.Artifact;
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Bundles;
+import org.apache.sling.feature.Configuration;
+import org.apache.sling.feature.Configurations;
+import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.ExtensionType;
+import org.apache.sling.feature.Extensions;
+import org.apache.sling.feature.KeyValueMap;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
@@ -33,20 +47,6 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 import javax.json.JsonWriter;
-
-import org.apache.felix.configurator.impl.json.JSMin;
-import org.apache.felix.configurator.impl.json.JSONUtil;
-import org.apache.felix.configurator.impl.json.TypeConverter;
-import org.apache.felix.configurator.impl.model.Config;
-import org.apache.sling.feature.Artifact;
-import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Bundles;
-import org.apache.sling.feature.Configuration;
-import org.apache.sling.feature.Configurations;
-import org.apache.sling.feature.Extension;
-import org.apache.sling.feature.ExtensionType;
-import org.apache.sling.feature.Extensions;
-import org.apache.sling.feature.KeyValueMap;
 
 /**
  * Common methods for JSON reading.
@@ -159,14 +159,15 @@ abstract class JSONReaderBase {
                 }
                 if ( bundleObj.containsKey(JSONConstants.FEATURE_CONFIGURATIONS) ) {
                     checkType(artifactType + " configurations", bundleObj.get(JSONConstants.FEATURE_CONFIGURATIONS), Map.class);
-                    addConfigurations(bundleObj, artifact, container);
+                    List<Configuration> bundleConfigs = addConfigurations(bundleObj, artifact, container);
+                    artifact.getMetadata().put(JSONConstants.FEATURE_CONFIGURATIONS, bundleConfigs);
                 }
             }
             artifacts.add(artifact);
         }
     }
 
-    protected void addConfigurations(final Map<String, Object> map,
+    protected List<Configuration> addConfigurations(final Map<String, Object> map,
             final Artifact artifact,
             final Configurations container) throws IOException {
         final JSONUtil.Report report = new JSONUtil.Report();
@@ -186,6 +187,8 @@ abstract class JSONReaderBase {
             }
             throw new IOException(builder.toString());
         }
+
+        List<Configuration> newConfigs = new ArrayList<>();
         for(final Config c : configs) {
             final int pos = c.getPid().indexOf('~');
             final Configuration config;
@@ -215,8 +218,9 @@ abstract class JSONReaderBase {
                 }
             }
             container.add(config);
+            newConfigs.add(config);
         }
-
+        return newConfigs;
     }
 
 
