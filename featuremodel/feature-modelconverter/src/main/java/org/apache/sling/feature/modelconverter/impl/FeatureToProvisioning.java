@@ -119,7 +119,7 @@ public class FeatureToProvisioning {
                 switch (prop.getKey()) {
                     // these are handled separately
                     case "start-level":
-                    case "run-mode":
+                    case "run-modes":
                         break;
                     default:
                         newBundle.getMetadata().put(prop.getKey(), prop.getValue());
@@ -204,7 +204,7 @@ public class FeatureToProvisioning {
     }
 
     private static String[] getRunModes(final org.apache.sling.feature.Artifact bundle) {
-        String runMode = bundle.getMetadata().get("run-mode");
+        String runMode = bundle.getMetadata().get("run-modes");
         String[] runModes;
         if (runMode != null) {
             runModes = runMode.split(",");
