@@ -103,13 +103,32 @@ public class FeatureToProvisioning {
             final ArtifactId id = bundle.getId();
             final Artifact newBundle = new Artifact(id.getGroupId(), id.getArtifactId(), id.getVersion(), id.getClassifier(), id.getType());
             for(final Map.Entry<String, String> prop : bundle.getMetadata()) {
-                newBundle.getMetadata().put(prop.getKey(), prop.getValue());
+                switch (prop.getKey()) {
+                    // these are handled separately
+                    case "start-level":
+                    case "run-mode":
+                        break;
+                    default:
+                        newBundle.getMetadata().put(prop.getKey(), prop.getValue());
+                }
             }
-            int startLevel = bundle.getStartOrder();
-            if ( startLevel == 0 ) {
+
+            int startLevel;
+            String sl = bundle.getMetadata().get("start-level");
+            if (sl != null) {
+                startLevel = Integer.parseInt(sl);
+            } else {
                 startLevel = 20;
             }
-            f.getOrCreateRunMode(null).getOrCreateArtifactGroup(startLevel).add(newBundle);
+
+            String runMode = bundle.getMetadata().get("run-mode");
+            String[] runModes;
+            if (runMode != null) {
+                runModes = runMode.split(",");
+            } else {
+                runModes = null;
+            }
+            f.getOrCreateRunMode(runModes).getOrCreateArtifactGroup(startLevel).add(newBundle);
         }
 
         // configurations
