@@ -146,7 +146,7 @@ abstract class JSONReaderBase {
                     throw new IOException(exceptionPrefix + " " + artifactType + " is missing required artifact id");
                 }
                 checkType(artifactType + " " + JSONConstants.ARTIFACT_ID, bundleObj.get(JSONConstants.ARTIFACT_ID), String.class);
-                final ArtifactId id = ArtifactId.parse(handleVars(bundleObj.get(JSONConstants.ARTIFACT_ID).toString()));
+                final ArtifactId id = ArtifactId.parse(handleVars(bundleObj.get(JSONConstants.ARTIFACT_ID)).toString());
 
                 artifact = new Artifact(id);
                 for(final Map.Entry<String, Object> metadataEntry : bundleObj.entrySet()) {
@@ -166,9 +166,9 @@ abstract class JSONReaderBase {
         }
     }
 
-    protected String handleVars(String textWithVars) {
-        // No variable substitution at this level
-        return textWithVars;
+    protected Object handleVars(Object val) {
+        // No variable substitution at this level, but subclasses can add this in
+        return val;
     }
 
     protected void addConfigurations(final Map<String, Object> map,
@@ -206,7 +206,7 @@ abstract class JSONReaderBase {
                     throw new IOException(exceptionPrefix + "Configuration must not define configurator property " + key);
                 }
                 final Object val = c.getProperties().get(key);
-                config.getProperties().put(key, val);
+                config.getProperties().put(key, handleVars(val));
             }
             if ( config.getProperties().get(Configuration.PROP_ARTIFACT) != null ) {
                 throw new IOException(exceptionPrefix + "Configuration must not define property " + Configuration.PROP_ARTIFACT);
@@ -246,7 +246,7 @@ abstract class JSONReaderBase {
                 if ( container.get(entry.getKey()) != null ) {
                     throw new IOException(this.exceptionPrefix + "Duplicate framework property " + entry.getKey());
                 }
-                container.put(entry.getKey(), entry.getValue().toString());
+                container.put(entry.getKey(), handleVars(entry.getValue()).toString());
             }
 
         }

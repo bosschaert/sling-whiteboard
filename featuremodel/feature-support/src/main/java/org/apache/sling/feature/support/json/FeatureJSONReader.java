@@ -153,9 +153,15 @@ public class FeatureJSONReader extends JSONReaderBase {
     }
 
     @Override
-    protected String handleVars(String textWithVars) {
+    protected Object handleVars(Object value) {
+        if (!(value instanceof String)) {
+            return value;
+        }
+
+        String textWithVars = (String) value;
+
         Pattern p = Pattern.compile("\\$\\{[a-zA-Z0-9.-_]+\\}");
-        Matcher m = p.matcher(textWithVars);
+        Matcher m = p.matcher(textWithVars.toString());
         StringBuffer sb = new StringBuffer();
         while (m.find()) {
             String var = m.group();
@@ -214,7 +220,7 @@ public class FeatureJSONReader extends JSONReaderBase {
                         throw new IOException(exceptionPrefix + " include is missing required artifact id");
                     }
                     checkType("Include " + JSONConstants.ARTIFACT_ID, obj.get(JSONConstants.ARTIFACT_ID), String.class);
-                    final ArtifactId id = ArtifactId.parse(obj.get(JSONConstants.ARTIFACT_ID).toString());
+                    final ArtifactId id = ArtifactId.parse(handleVars(obj.get(JSONConstants.ARTIFACT_ID)).toString());
                     include = new Include(id);
 
                     if ( obj.containsKey(JSONConstants.INCLUDE_REMOVALS) ) {
@@ -312,7 +318,7 @@ public class FeatureJSONReader extends JSONReaderBase {
                     checkType("Requirement attributes", obj.get(JSONConstants.REQCAP_ATTRIBUTES), Map.class);
                     @SuppressWarnings("unchecked")
                     final Map<String, Object> attrs = (Map<String, Object>)obj.get(JSONConstants.REQCAP_ATTRIBUTES);
-                    attrs.forEach(rethrowBiConsumer((key, value) -> unmarshalAttribute(key, value, attrMap::put)));
+                    attrs.forEach(rethrowBiConsumer((key, value) -> unmarshalAttribute(key, handleVars(value), attrMap::put)));
                 }
 
                 Map<String, String> dirMap = new HashMap<>();
@@ -320,10 +326,10 @@ public class FeatureJSONReader extends JSONReaderBase {
                     checkType("Requirement directives", obj.get(JSONConstants.REQCAP_DIRECTIVES), Map.class);
                     @SuppressWarnings("unchecked")
                     final Map<String, Object> dirs = (Map<String, Object>)obj.get(JSONConstants.REQCAP_DIRECTIVES);
-                    dirs.forEach(rethrowBiConsumer((key, value) -> unmarshalDirective(key, value, dirMap::put)));
+                    dirs.forEach(rethrowBiConsumer((key, value) -> unmarshalDirective(key, handleVars(value), dirMap::put)));
                 }
 
-                final Requirement r = new OSGiRequirement(obj.get(JSONConstants.REQCAP_NAMESPACE).toString(), attrMap, dirMap);
+                final Requirement r = new OSGiRequirement(handleVars(obj.get(JSONConstants.REQCAP_NAMESPACE)).toString(), attrMap, dirMap);
                 feature.getRequirements().add(r);
             }
         }
@@ -351,7 +357,7 @@ public class FeatureJSONReader extends JSONReaderBase {
                     checkType("Capability attributes", obj.get(JSONConstants.REQCAP_ATTRIBUTES), Map.class);
                     @SuppressWarnings("unchecked")
                     final Map<String, Object> attrs = (Map<String, Object>)obj.get(JSONConstants.REQCAP_ATTRIBUTES);
-                    attrs.forEach(rethrowBiConsumer((key, value) -> unmarshalAttribute(key, value, attrMap::put)));
+                    attrs.forEach(rethrowBiConsumer((key, value) -> unmarshalAttribute(key, handleVars(value), attrMap::put)));
                 }
 
                 Map<String, String> dirMap = new HashMap<>();
@@ -359,10 +365,10 @@ public class FeatureJSONReader extends JSONReaderBase {
                     checkType("Capability directives", obj.get(JSONConstants.REQCAP_DIRECTIVES), Map.class);
                     @SuppressWarnings("unchecked")
                     final Map<String, Object> dirs = (Map<String, Object>) obj.get(JSONConstants.REQCAP_DIRECTIVES);
-                    dirs.forEach(rethrowBiConsumer((key, value) -> unmarshalDirective(key, value, dirMap::put)));
+                    dirs.forEach(rethrowBiConsumer((key, value) -> unmarshalDirective(key, handleVars(value), dirMap::put)));
                 }
 
-                final Capability c = new OSGiCapability(obj.get(JSONConstants.REQCAP_NAMESPACE).toString(), attrMap, dirMap);
+                final Capability c = new OSGiCapability(handleVars(obj.get(JSONConstants.REQCAP_NAMESPACE)).toString(), attrMap, dirMap);
                 feature.getCapabilities().add(c);
             }
         }
