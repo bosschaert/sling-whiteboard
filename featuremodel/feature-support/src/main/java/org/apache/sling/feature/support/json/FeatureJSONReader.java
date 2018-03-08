@@ -165,6 +165,8 @@ public class FeatureJSONReader extends JSONReaderBase {
             String val = variables.get(name);
             if (val != null) {
                 m.appendReplacement(sb, Matcher.quoteReplacement(val));
+            } else {
+                throw new IllegalStateException("Undefined variable: " + name);
             }
         }
         m.appendTail(sb);

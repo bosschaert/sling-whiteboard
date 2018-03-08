@@ -34,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class FeatureJSONReaderTest {
 
@@ -96,6 +97,12 @@ public class FeatureJSONReaderTest {
         assertEquals("foobarfoo", reader.handleVars("foo${var1}foo"));
         assertEquals("barbarbar", reader.handleVars("${var1}${var1}${var1}"));
         assertEquals("${}test${myvar}2", reader.handleVars("${}test${varvariable}${var.2}"));
+        try {
+            reader.handleVars("${undefined}");
+            fail("Should throw an exception on the undefined variable");
+        } catch (IllegalStateException ise) {
+            // good
+        }
     }
 
     private void setPrivateField(Object obj, String name, Object value) throws Exception {
