@@ -16,21 +16,6 @@
  */
 package org.apache.sling.feature.support.json;
 
-import static org.apache.sling.feature.support.util.LambdaUtil.rethrowBiConsumer;
-import static org.apache.sling.feature.support.util.ManifestUtil.unmarshalAttribute;
-import static org.apache.sling.feature.support.util.ManifestUtil.unmarshalDirective;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-
 import org.apache.felix.configurator.impl.json.JSONUtil;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
@@ -39,6 +24,23 @@ import org.apache.sling.feature.OSGiCapability;
 import org.apache.sling.feature.OSGiRequirement;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+
+import static org.apache.sling.feature.support.util.LambdaUtil.rethrowBiConsumer;
+import static org.apache.sling.feature.support.util.ManifestUtil.unmarshalAttribute;
+import static org.apache.sling.feature.support.util.ManifestUtil.unmarshalDirective;
 
 /**
  * This class offers a method to read a {@code Feature} using a {@code Reader} instance.
@@ -87,12 +89,15 @@ public class FeatureJSONReader extends JSONReaderBase {
     /** The provided id. */
     private final ArtifactId providedId;
 
+    /** The variables from the JSON. */
+    private Map<String, String> variables;
+
     /**
      * Private constructor
      * @param pId Optional id
      * @param location Optional location
      */
-    private FeatureJSONReader(final ArtifactId pId, final String location) {
+    FeatureJSONReader(final ArtifactId pId, final String location) {
         super(location);
         this.providedId = pId;
     }
@@ -130,6 +135,8 @@ public class FeatureJSONReader extends JSONReaderBase {
         this.feature.setVendor(getProperty(map, JSONConstants.FEATURE_VENDOR));
         this.feature.setLicense(getProperty(map, JSONConstants.FEATURE_LICENSE));
 
+        this.variables = this.readVariables(map);
+
         this.readBundles(map, feature.getBundles(), feature.getConfigurations());
         this.readFrameworkProperties(map, feature.getFrameworkProperties());
         this.readConfigurations(map, feature.getConfigurations());
@@ -143,6 +150,46 @@ public class FeatureJSONReader extends JSONReaderBase {
                 this.feature.getExtensions(), this.feature.getConfigurations());
 
         return feature;
+    }
+
+    @Override
+    protected String handleVars(String textWithVars) {
+        Pattern p = Pattern.compile("\\$\\{[a-zA-Z0-9.-_]+\\}");
+        Matcher m = p.matcher(textWithVars);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String var = m.group();
+
+            int len = var.length();
+            String name = var.substring(2, len - 1);
+            String val = variables.get(name);
+            if (val != null) {
+                m.appendReplacement(sb, Matcher.quoteReplacement(val));
+            }
+        }
+        m.appendTail(sb);
+
+        return sb.toString();
+    }
+
+    private Map<String, String> readVariables(Map<String, Object> map) throws IOException {
+        Map<String, String> varMap = new HashMap<>();
+
+        if (map.containsKey(JSONConstants.FEATURE_VARIABLES)) {
+            final Object variablesObj = map.get(JSONConstants.FEATURE_VARIABLES);
+            checkType(JSONConstants.FEATURE_VARIABLES, variablesObj, Map.class);
+
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> vars = (Map<String, Object>) variablesObj;
+            for (final Map.Entry<String, Object> entry : vars.entrySet()) {
+                checkType("variable value", entry.getValue(), String.class, Boolean.class, Number.class);
+                if (varMap.get(entry.getKey()) != null) {
+                    throw new IOException(this.exceptionPrefix + "Duplicate variable " + entry.getKey());
+                }
+                varMap.put(entry.getKey(), "" + entry.getValue());
+            }
+        }
+        return varMap;
     }
 
     private void readIncludes(final Map<String, Object> map) throws IOException {

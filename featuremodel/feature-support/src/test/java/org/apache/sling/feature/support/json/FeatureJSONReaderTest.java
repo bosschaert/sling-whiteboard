@@ -16,6 +16,8 @@
  */
 package org.apache.sling.feature.support.json;
 
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Bundles;
 import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Extensions;
@@ -23,11 +25,15 @@ import org.apache.sling.feature.Feature;
 import org.junit.Test;
 import org.osgi.resource.Capability;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class FeatureJSONReaderTest {
 
@@ -55,6 +61,14 @@ public class FeatureJSONReaderTest {
 
     }
 
+    @Test public void testReadWithVariables() throws Exception {
+        final Feature feature = U.readFeature("test2");
+        Bundles bundles = feature.getBundles();
+        ArtifactId id = new ArtifactId("org.apache.sling", "foo-xyz", "1.2.3", null, null);
+        assertTrue(bundles.containsExact(id));
+
+    }
+
     @Test public void testReadRepoInitExtension() throws Exception {
         Feature feature = U.readFeature("repoinit");
         Extensions extensions = feature.getExtensions();
@@ -69,5 +83,24 @@ public class FeatureJSONReaderTest {
         assertEquals(1, extensions.size());
         Extension ext = extensions.iterator().next();
         assertEquals("some repo init\ntext\n", ext.getText());
+    }
+
+    @Test public void testHandleVars() throws Exception {
+        FeatureJSONReader reader = new FeatureJSONReader(null, null);
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("var1", "bar");
+        vars.put("varvariable", "${myvar}");
+        vars.put("var.2", "2");
+        setPrivateField(reader, "variables", vars);
+
+        assertEquals("foobarfoo", reader.handleVars("foo${var1}foo"));
+        assertEquals("barbarbar", reader.handleVars("${var1}${var1}${var1}"));
+        assertEquals("${}test${myvar}2", reader.handleVars("${}test${varvariable}${var.2}"));
+    }
+
+    private void setPrivateField(Object obj, String name, Object value) throws Exception {
+        Field field = obj.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(obj, value);
     }
 }
