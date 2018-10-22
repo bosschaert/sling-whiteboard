@@ -18,20 +18,11 @@
  */
 package org.apache.sling.feature.service.impl;
 
-import org.apache.sling.feature.Artifact;
-import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Feature;
-import org.apache.sling.feature.io.json.FeatureJSONReader;
-import org.apache.sling.feature.service.Features;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
-import java.io.IOException;
-import java.io.StringReader;
 
 @Component(immediate=true)
-public class FeaturesServiceImpl implements Features {
+public class FeaturesServiceImpl /* implements Features */ {
+    /*
     private Feature feature;
 
     @Reference
@@ -57,4 +48,5 @@ public class FeaturesServiceImpl implements Features {
         }
         return null;
     }
+    */
 }

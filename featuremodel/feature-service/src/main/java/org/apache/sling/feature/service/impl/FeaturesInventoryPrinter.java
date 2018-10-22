@@ -20,37 +20,45 @@ package org.apache.sling.feature.service.impl;
 
 import org.apache.felix.inventory.Format;
 import org.apache.felix.inventory.InventoryPrinter;
-import org.apache.sling.feature.launcher.service.Features;
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
-@Component(property = {InventoryPrinter.NAME + "=launch.features",
+@Component(immediate = true, property = {InventoryPrinter.NAME + "=launch.features",
         InventoryPrinter.TITLE + "=Launch Features",
         InventoryPrinter.FORMAT + "=TEXT"})
 public class FeaturesInventoryPrinter implements InventoryPrinter
 {
+    BundleContext bundleContext;
 
-    @Reference
-    Features featuresService;
-
-    /*
     @Activate
     public void activate(BundleContext bc) {
-        System.out.println("*** Features Service Activated: " + bc);
-
-        printProperty("org.osgi.framework.system.packages.extra", bc);
+        bundleContext = bc;
     }
 
-    private void printProperty(String prop, BundleContext bc) {
-        System.out.println("### prop val:" + bc.getProperty(prop));
-    }
-    */
+//    private void printProperty(String prop, BundleContext bc) {
+//        System.out.println("### prop val:" + bc.getProperty(prop));
+//    }
 
     @Override
     public void print(PrintWriter printWriter, Format format, boolean isZip) {
-         printWriter.println(featuresService.getEffectiveFeature());
+        String f = bundleContext.getProperty("sling.feature");
+        if (f != null) {
+            try {
+                String json = new String(Files.readAllBytes(Paths.get(new URI(f))));
+                printWriter.println(json);
+            } catch (IOException | URISyntaxException e) {
+                e.printStackTrace(printWriter);
+            }
+        }
+//         printWriter.println(featuresService.getEffectiveFeature());
     }
 
 //    @Reference(target="(" + InventoryPrinter.NAME + "=launch.features)")

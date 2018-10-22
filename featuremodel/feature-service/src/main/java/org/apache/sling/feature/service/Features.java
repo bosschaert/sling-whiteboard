@@ -18,10 +18,7 @@
  */
 package org.apache.sling.feature.service;
 
-import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Feature;
-
 public interface Features {
-    Feature getCurrentFeature();
-    String getBundleOrigin(ArtifactId bundleId);
+//    Feature getCurrentFeature();
+//    String getBundleOrigin(ArtifactId bundleId);
 }
