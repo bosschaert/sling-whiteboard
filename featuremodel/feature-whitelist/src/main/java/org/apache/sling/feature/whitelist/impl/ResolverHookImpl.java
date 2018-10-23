@@ -26,109 +26,32 @@ import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class ResolverHookImpl implements ResolverHook {
-    String idbsnverFileName = "idbsnver.properties";
-    String bundleFeatureFileName = "bundles.properties";
-    String regionPackageFileName = "regions.properties";
-    String featureRegionFileName = "features.properties";
+    private static final Logger LOG = Logger.getLogger(ResolverHookImpl.class.getName());
 
-    final Map<Map.Entry<String, Version>, List<String>> bsnVerMap;
-    final Map<String, List<String>> bundleFeatureMap;
-    final Map<String, Set<String>> featureRegionMap;
-    final Map<String, Set<String>> regionPackageMap;
+    private final Map<Map.Entry<String, Version>, List<String>> bsnVerMap;
+    private final Map<String, Set<String>> bundleFeatureMap;
+    private final Map<String, Set<String>> featureRegionMap;
+    private final Map<String, Set<String>> regionPackageMap;
 
-    public ResolverHookImpl() throws IOException {
-        bsnVerMap = populateBSNVerMap();
-        bundleFeatureMap = populateBundleFeatureMap();
-        featureRegionMap = populateFeatureRegionMap();
-        regionPackageMap = populateRegionPackageMap();
-    }
-
-    private Map<Map.Entry<String, Version>, List<String>> populateBSNVerMap() throws IOException {
-        File idbsnverFile = getDataFile(idbsnverFileName);
-        if (idbsnverFile.exists()) {
-            Map<Map.Entry<String, Version>, List<String>> m = new HashMap<>();
-
-            Properties p = new Properties();
-            try (InputStream is = new FileInputStream(idbsnverFile)) {
-                p.load(is);
-            }
-
-            for (String n : p.stringPropertyNames()) {
-                String[] bsnver = p.getProperty(n).split("~");
-                Map.Entry<String, Version> key = new AbstractMap.SimpleEntry<String, Version>(bsnver[0], Version.valueOf(bsnver[1]));
-                List<String> l = m.get(key);
-                if (l == null) {
-                    l = new ArrayList<>();
-                    m.put(key, l);
-                }
-            }
-
-            Map<Map.Entry<String, Version>, List<String>> m2 = new HashMap<>();
-
-            for (Map.Entry<Map.Entry<String, Version>, List<String>> entry : m.entrySet()) {
-                m2.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
-            }
-
-            return Collections.unmodifiableMap(m2);
-        } else {
-            return Collections.emptyMap();
-        }
-    }
-
-    private Map<String, List<String>> populateBundleFeatureMap() throws IOException {
-        Map<String, List<String>> m = new HashMap<>();
-
-        File bundleFeatureFile = getDataFile(bundleFeatureFileName);
-        if (bundleFeatureFile.exists()) {
-            Properties p = new Properties();
-            try (InputStream is = new FileInputStream(bundleFeatureFile)) {
-                p.load(is);
-            }
-
-            for (String n : p.stringPropertyNames()) {
-                String[] features = p.getProperty(n).split(",");
-                m.put(n, Collections.unmodifiableList(Arrays.asList(features)));
-            }
-        }
-
-        return Collections.unmodifiableMap(m);
-    }
-
-    private Map<String, Set<String>> populateFeatureRegionMap() {
-        Map<String, Set<String>> m = new HashMap<>();
-
-        return Collections.unmodifiableMap(m);
-    }
-
-    private Map<String, Set<String>> populateRegionPackageMap() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    private File getDataFile(String name) {
-        String dir = System.getProperty("launcher.framework.datadir");
-        if (dir == null)
-            return null;
-
-        return new File(dir, name);
+    public ResolverHookImpl(Map<Entry<String, Version>, List<String>> bsnVerMap, Map<String, Set<String>> bundleFeatureMap,
+            Map<String, Set<String>> featureRegionMap, Map<String, Set<String>> regionPackageMap) {
+        this.bsnVerMap = bsnVerMap;
+        this.bundleFeatureMap = bundleFeatureMap;
+        this.featureRegionMap = featureRegionMap;
+        this.regionPackageMap = regionPackageMap;
     }
 
     @Override
@@ -158,7 +81,7 @@ class ResolverHookImpl implements ResolverHook {
             return; // TODO what to do?
         List<String> reqFeatures = new ArrayList<>();
         for (String aid : aids) {
-            List<String> fid = bundleFeatureMap.get(aid);
+            Set<String> fid = bundleFeatureMap.get(aid);
             if (fid != null)
                 reqFeatures.addAll(fid);
         }
@@ -199,7 +122,7 @@ class ResolverHookImpl implements ResolverHook {
                 return; // TODO what to do?
             List<String> capFeatures = new ArrayList<>();
             for (String ba : capBundleArtifacts) {
-                List<String> capfeats = bundleFeatureMap.get(ba);
+                Set<String> capfeats = bundleFeatureMap.get(ba);
                 if (capfeats != null)
                     capFeatures.addAll(capfeats);
             }
@@ -251,7 +174,7 @@ class ResolverHookImpl implements ResolverHook {
 
         // Remove any capabilities that are not covered
         if (candidates.retainAll(coveredCaps)) {
-            WhitelistEnforcer.LOG.log(Level.INFO,
+            LOG.log(Level.INFO,
                     "Removed one ore more candidates for requirement {0} as they are not in the correct region", requirement);
         }
     }
