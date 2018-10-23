@@ -25,7 +25,7 @@ import org.osgi.framework.hooks.resolver.ResolverHookFactory;
 public class Activator implements BundleActivator {
     @Override
     public synchronized void start(BundleContext context) throws Exception {
-        WhitelistEnforcer enforcer = new WhitelistEnforcer();
+        RegionEnforcer enforcer = new RegionEnforcer();
         context.registerService(ResolverHookFactory.class, enforcer, null);
     }
 

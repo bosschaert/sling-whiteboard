@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-class WhitelistEnforcer implements ResolverHookFactory {
+class RegionEnforcer implements ResolverHookFactory {
     private static final String idbsnverFileName = "idbsnver.properties";
     private static final String bundleFeatureFileName = "bundles.properties";
     private static final String regionPackageFileName = "regions.properties";
@@ -50,7 +50,7 @@ class WhitelistEnforcer implements ResolverHookFactory {
     private final Map<String, Set<String>> featureRegionMap;
     private final Map<String, Set<String>> regionPackageMap;
 
-    public WhitelistEnforcer() throws IOException {
+    public RegionEnforcer() throws IOException {
         bsnVerMap = populateBSNVerMap();
         bundleFeatureMap = populateBundleFeatureMap();
         featureRegionMap = populateFeatureRegionMap();
