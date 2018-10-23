@@ -18,18 +18,18 @@
  */
 package org.apache.sling.feature.whitelist.impl;
 
-import org.apache.sling.feature.service.Features;
-import org.apache.sling.feature.whitelist.WhitelistService;
 import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.hooks.resolver.ResolverHookFactory;
 import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.util.tracker.ServiceTracker;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 class WhitelistEnforcer implements ResolverHookFactory {
     static final Logger LOG = Logger.getLogger(WhitelistEnforcer.class.getName());
+    /*
 
     final ServiceTracker<Features, Features> featureServiceTracker;
     final WhitelistService whitelistService;
@@ -38,9 +38,15 @@ class WhitelistEnforcer implements ResolverHookFactory {
         whitelistService = wls;
         featureServiceTracker = tracker;
     }
+    */
 
     @Override
     public ResolverHook begin(Collection<BundleRevision> triggers) {
-        return new ResolverHookImpl(featureServiceTracker, whitelistService);
+        try {
+            return new ResolverHookImpl();
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Problem creating API Whitelist Enforcer", e);
+            return null;
+        }
     }
 }

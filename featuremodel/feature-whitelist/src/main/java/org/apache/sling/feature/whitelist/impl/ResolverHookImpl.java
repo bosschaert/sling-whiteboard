@@ -28,11 +28,11 @@ import org.osgi.framework.wiring.BundleRevision;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,27 +54,14 @@ class ResolverHookImpl implements ResolverHook {
     final Map<String, Set<String>> featureRegionMap;
     final Map<String, Set<String>> regionPackageMap;
 
-//    private static final long SERVICE_WAIT_TIMEOUT = 60000;
-//
-//    private final ServiceTracker<Features, Features> featureServiceTracker;
-//    private final WhitelistService whitelistService;
-//
-//    @Reference
-//    Bundles bundleService;
-//
-//    @Reference
-//    Features featuresService;
-//
     public ResolverHookImpl() throws IOException {
-//        featureServiceTracker = tracker;
-//        whitelistService = wls;
         bsnVerMap = populateBSNVerMap();
         bundleFeatureMap = populateBundleFeatureMap();
-
-
+        featureRegionMap = populateFeatureRegionMap();
+        regionPackageMap = populateRegionPackageMap();
     }
 
-    private Map<Map.Entry<String, Version>, List<String>> populateBSNVerMap() throws IOException, FileNotFoundException {
+    private Map<Map.Entry<String, Version>, List<String>> populateBSNVerMap() throws IOException {
         File idbsnverFile = getDataFile(idbsnverFileName);
         if (idbsnverFile.exists()) {
             Map<Map.Entry<String, Version>, List<String>> m = new HashMap<>();
@@ -102,11 +89,36 @@ class ResolverHookImpl implements ResolverHook {
 
             return Collections.unmodifiableMap(m2);
         } else {
-            return null;
+            return Collections.emptyMap();
         }
     }
 
-    private Map<String, List<String>> populateBundleFeatureMap() {
+    private Map<String, List<String>> populateBundleFeatureMap() throws IOException {
+        Map<String, List<String>> m = new HashMap<>();
+
+        File bundleFeatureFile = getDataFile(bundleFeatureFileName);
+        if (bundleFeatureFile.exists()) {
+            Properties p = new Properties();
+            try (InputStream is = new FileInputStream(bundleFeatureFile)) {
+                p.load(is);
+            }
+
+            for (String n : p.stringPropertyNames()) {
+                String[] features = p.getProperty(n).split(",");
+                m.put(n, Collections.unmodifiableList(Arrays.asList(features)));
+            }
+        }
+
+        return Collections.unmodifiableMap(m);
+    }
+
+    private Map<String, Set<String>> populateFeatureRegionMap() {
+        Map<String, Set<String>> m = new HashMap<>();
+
+        return Collections.unmodifiableMap(m);
+    }
+
+    private Map<String, Set<String>> populateRegionPackageMap() {
         // TODO Auto-generated method stub
         return null;
     }
@@ -141,142 +153,106 @@ class ResolverHookImpl implements ResolverHook {
         String reqBundleName = reqBundle.getSymbolicName();
         Version reqBundleVersion = reqBundle.getVersion();
 
-        try {
-            /*
-            Features fs = featureServiceTracker.waitForService(SERVICE_WAIT_TIMEOUT);
+        List<String> aids = bsnVerMap.get(new AbstractMap.SimpleEntry<String, Version>(reqBundleName, reqBundleVersion));
+        if (aids == null)
+            return; // TODO what to do?
+        List<String> reqFeatures = new ArrayList<>();
+        for (String aid : aids) {
+            List<String> fid = bundleFeatureMap.get(aid);
+            if (fid != null)
+                reqFeatures.addAll(fid);
+        }
 
-            // The Feature Service could not be found, skip candidate pruning
-            if (fs == null) {
-                WhitelistEnforcer.LOG.warning("Could not obtain the feature service, no whitelist enforcement");
-                return;
+        Set<String> regions = new HashSet<>();
+        for (String feature : reqFeatures) {
+            Set<String> fr = featureRegionMap.get(feature);
+            if (fr != null) {
+                regions.addAll(fr);
             }
-            */
+        }
 
-//            String reqBundleArtifact = bundleService.getBundleArtifact(reqBundleName, reqBundleVersion.toString());
-            List<String> aids = bsnVerMap.get(new AbstractMap.SimpleEntry<String, Version>(reqBundleName, reqBundleVersion));
-            if (aids == null)
+        Set<BundleCapability> coveredCaps = new HashSet<>();
+
+        nextCapability:
+        for (BundleCapability bc : candidates) {
+            BundleRevision rev = bc.getRevision();
+
+            Bundle capBundle = rev.getBundle();
+            long capBundleID = capBundle.getBundleId();
+            if (capBundleID == 0) {
+                // always allow capability from the system bundle
+                coveredCaps.add(bc);
+                continue nextCapability;
+            }
+
+            if (capBundleID == reqBundleID) {
+                // always allow capability from same bundle
+                coveredCaps.add(bc);
+                continue nextCapability;
+            }
+
+            String capBundleName = capBundle.getSymbolicName();
+            Version capBundleVersion = capBundle.getVersion();
+
+            List<String> capBundleArtifacts = bsnVerMap.get(new AbstractMap.SimpleEntry<String, Version>(capBundleName, capBundleVersion));
+            if (capBundleArtifacts == null)
                 return; // TODO what to do?
-            List<String> reqFeatures = new ArrayList<>();
-            for (String aid : aids) {
-                List<String> fid = bundleFeatureMap.get(aid);
-                if (fid != null)
-                    reqFeatures.addAll(fid);
-            }
-//            String reqFeatureArtifact = featuresService.getBundleOrigin(ArtifactId.fromMvnId(reqBundleArtifact));
-//            Set<String> reqFeatures = Collections.singleton(reqFeatureArtifact); // TODO multiple features?
-            /*
-            Set<String> regions;
-            if (reqFeatures == null) {
-                regions = Collections.emptySet();
-                reqFeatures = Collections.emptySet();
-            } else {
-                regions = new HashSet<>();
-                for (String feature : reqFeatures) {
-                    regions.addAll(whitelistService.listRegions(feature));
-                }
-            }
-            */
-            Set<String> regions = new HashSet<>();
-            for (String feature : reqFeatures) {
-                Set<String> fr = featureRegionMap.get(feature);
-                if (fr != null) {
-                    regions.addAll(fr);
-                }
+            List<String> capFeatures = new ArrayList<>();
+            for (String ba : capBundleArtifacts) {
+                List<String> capfeats = bundleFeatureMap.get(ba);
+                if (capfeats != null)
+                    capFeatures.addAll(capfeats);
             }
 
-            Set<BundleCapability> coveredCaps = new HashSet<>();
+            if (capFeatures.isEmpty())
+                capFeatures = Collections.singletonList(null);
 
-            nextCapability:
-            for (BundleCapability bc : candidates) {
-                BundleRevision rev = bc.getRevision();
-
-                Bundle capBundle = rev.getBundle();
-                long capBundleID = capBundle.getBundleId();
-                if (capBundleID == 0) {
-                    // always allow capability from the system bundle
+            for (String capFeat : capFeatures) {
+                if (capFeat == null) {
+                    // always allow capability not coming from a feature
                     coveredCaps.add(bc);
                     continue nextCapability;
                 }
 
-                if (capBundleID == reqBundleID) {
-                    // always allow capability from same bundle
+                if (reqFeatures.contains(capFeat)) {
+                    // Within a single feature everything can wire to everything else
                     coveredCaps.add(bc);
                     continue nextCapability;
                 }
 
-                String capBundleName = capBundle.getSymbolicName();
-                Version capBundleVersion = capBundle.getVersion();
-
-                /*
-                String capBundleArtifact = bundleService.getBundleArtifact(capBundleName, capBundleVersion.toString());
-                String capFeatureArtifact = featuresService.getBundleOrigin(ArtifactId.fromMvnId(capBundleArtifact));
-                Set<String> capFeatures = Collections.singleton(capFeatureArtifact); // TODO multiple features?
-                */
-                List<String> capBundleArtifacts = bsnVerMap.get(new AbstractMap.SimpleEntry<String, Version>(capBundleName, capBundleVersion));
-                if (capBundleArtifacts == null)
-                    return; // TODO what to do?
-                List<String> capFeatures = new ArrayList<>();
-                for (String ba : capBundleArtifacts) {
-                    List<String> capfeats = bundleFeatureMap.get(ba);
-                    if (capfeats != null)
-                        capFeatures.addAll(capfeats);
+                if (featureRegionMap.get(capFeat) == null) {
+                    // If the feature hosting the capability has no regions defined, everyone can access
+                    coveredCaps.add(bc);
+                    continue nextCapability;
                 }
 
-                if (capFeatures.isEmpty())
-                    capFeatures = Collections.singletonList(null);
+                Object pkg = bc.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE);
+                if (pkg instanceof String) {
+                    String packageName = (String) pkg;
 
-                for (String capFeat : capFeatures) {
-                    if (capFeat == null) {
-                        // always allow capability not coming from a feature
+                    Set<String> globalPackages = regionPackageMap.get("global");
+                    if (globalPackages != null && globalPackages.contains(packageName)) {
+                        // If the export is in the global region everyone can access
                         coveredCaps.add(bc);
                         continue nextCapability;
                     }
 
-                    if (reqFeatures.contains(capFeat)) {
-                        // Within a single feature everything can wire to everything else
-                        coveredCaps.add(bc);
-                        continue nextCapability;
-                    }
-
-//                    if (whitelistService.listRegions(capFeat) == null) {
-                    if (featureRegionMap.get(capFeat) == null) {
-                        // If the feature hosting the capability has no regions defined, everyone can access
-                        coveredCaps.add(bc);
-                        continue nextCapability;
-                    }
-
-                    Object pkg = bc.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE);
-                    if (pkg instanceof String) {
-                        String packageName = (String) pkg;
-
-//                        if (whitelistService.listPackages(WhitelistService.GLOBAL_REGION).contains(packageName)) {
-                        Set<String> globalPackages = regionPackageMap.get("global");
-                        if (globalPackages != null && globalPackages.contains(packageName)) {
-                            // If the export is in the global region everyone can access
+                    for (String region : regions) {
+                        Set<String> regionPackages = regionPackageMap.get(region);
+                        if (regionPackages != null && regionPackages.contains(packageName)) {
+                            // If the export is in a region that the feature is also in, then allow
                             coveredCaps.add(bc);
                             continue nextCapability;
                         }
-
-                        for (String region : regions) {
-//                            if (whitelistService.listPackages(region).contains(packageName)) {
-                            Set<String> regionPackages = regionPackageMap.get(region);
-                            if (regionPackages != null && regionPackages.contains(packageName)) {
-                                // If the export is in a region that the feature is also in, then allow
-                                coveredCaps.add(bc);
-                                continue nextCapability;
-                            }
-                        }
                     }
                 }
             }
+        }
 
-            // Remove any capabilities that are not covered
-            if (candidates.retainAll(coveredCaps)) {
-                WhitelistEnforcer.LOG.log(Level.INFO,
-                        "Removed one ore more candidates for requirement {0} as they are not in the correct region", requirement);
-            }
-        } catch (InterruptedException e) {
-            // ignore
+        // Remove any capabilities that are not covered
+        if (candidates.retainAll(coveredCaps)) {
+            WhitelistEnforcer.LOG.log(Level.INFO,
+                    "Removed one ore more candidates for requirement {0} as they are not in the correct region", requirement);
         }
     }
 
