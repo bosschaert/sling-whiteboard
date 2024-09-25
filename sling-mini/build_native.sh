@@ -20,7 +20,7 @@ artifacts/org/apache/commons/commons-text/1.10.0/commons-text-1.10.0.jar:\
 atomos-config/app.substrate.jar" \
 org.apache.sling.feature.launcher.impl.Main \
 -O3 --no-fallback --enable-https --enable-http \
--o aem_native "--gc=epsilon" "-march=native" \
+-o sling_native "--gc=epsilon" "-march=native" \
 --pgo=../default.iprof \
 "$@"
 
