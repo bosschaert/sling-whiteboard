@@ -1,0 +1,20 @@
+FROM ghcr.io/graalvm/native-image-community:21 AS native
+# FROM ghcr.io/graalvm/native-image:ol8-java17-22.3.3 AS native
+
+COPY target/artifacts artifacts
+COPY --chmod=777 build_native.sh build_native.sh
+COPY target/atomos-config/app.substrate.jar app.substrate.jar
+# maybe COPY target/atomos-config /atomos-config ?
+COPY target/slingfeature-tmp/feature-offlineapp.json feature-myapp.json
+# COPY default.iprof default.iprof TODO re-enable
+
+RUN ./build_native.sh "-H:+StaticExecutableWithDynamicLibC" "-o launcher"
+
+FROM gcr.io/distroless/base-nossl
+
+COPY --from=native --chmod=777 /app/launcher /app/launcher
+COPY --from=native /app/feature-myapp.json /app/feature-myapp.json
+
+CMD ["/app/launcher", "-f", "file:///app/feature-myapp.json"]
+
+
