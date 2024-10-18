@@ -19,11 +19,13 @@ artifacts/org/apache/sling/org.apache.sling.commons.johnzon/1.2.16/org.apache.sl
 artifacts/org/apache/commons/commons-text/1.10.0/commons-text-1.10.0.jar:\
 atomos-config/app.substrate.jar" \
 org.apache.sling.feature.launcher.impl.Main \
--O3 --no-fallback --enable-https --enable-http \
--o sling_native "-march=native" "--gc=epsilon"  --pgo=../default.iprof \
+-o sling_native -O3  "-march=native" "--gc=epsilon" --no-fallback --pgo=default.iprof \
 "$@"
 
 popd
+
+# -O3 --no-fallback --enable-https --enable-http \
+# "-march=native" "--gc=epsilon"  --pgo=../default.iprof
 
 # --pgo-instrument
 #
